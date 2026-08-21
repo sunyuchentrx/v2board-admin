@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>V2Board 管理后台 (dev)</title>
+    <script>
+      // 仅开发环境使用。生产环境由 resources/views/admin-v2.blade.php 注入真实值。
+      // secure_path 请在 admin-src/.env.local 里用 VITE_SECURE_PATH 配置。
+      window.settings = {
+        title: 'V2Board (dev)',
+        theme: { sidebar: 'light', header: 'dark', color: 'default' },
+        version: 'dev',
+        background_url: '',
+        logo: '',
+        secure_path: '',
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

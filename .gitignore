@@ -1,0 +1,15 @@
+node_modules
+dist
+.env.local
+*.local
+
+# 编辑器 / 系统
+.DS_Store
+.idea
+.vscode
+*.log
+npm-debug.log*
+
+# macOS 压缩包残留
+__MACOSX/
+._*
