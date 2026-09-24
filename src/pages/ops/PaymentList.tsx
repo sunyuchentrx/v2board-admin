@@ -586,7 +586,10 @@ export default function PaymentList() {
                     shape="square"
                     size={32}
                     className="payment-avatar"
-                    src={row.icon || undefined}
+                    // 传 <img> 而不是字符串：要带 no-referrer，免得 Referer 把后台地址（secure_path）泄露给图标所在的站点
+                    src={
+                      row.icon ? <img src={row.icon} alt="" referrerPolicy="no-referrer" /> : undefined
+                    }
                     icon={<CreditCardOutlined />}
                   />
                   <div className="payment-name-text">

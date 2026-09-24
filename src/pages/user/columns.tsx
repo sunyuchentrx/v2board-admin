@@ -81,7 +81,7 @@ export function buildUserColumns({
       title: '邮箱',
       key: 'email',
       dataIndex: 'email',
-      width: 208,
+      width: 204,
       fixed: pin ? 'left' : undefined,
       render: (_, row) => {
         const isAdmin = row.is_admin === 1
@@ -126,7 +126,7 @@ export function buildUserColumns({
       title: '状态',
       key: 'banned',
       dataIndex: 'banned',
-      width: 80,
+      width: 76,
       render: (_, row) =>
         row.banned === 1 ? (
           <Tag bordered={false} color="error">
@@ -143,7 +143,8 @@ export function buildUserColumns({
       title: '订阅 / 到期',
       key: 'expired_at',
       dataIndex: 'expired_at',
-      width: 160,
+      // 172：「过期 2026-09-22 21:13」这一行在 1280 宽（不拉伸）时也不被截断
+      width: 172,
       sorter: true,
       render: (_, row) => {
         // 全新用户：没套餐也没到期时间，一行「无订阅」就够了
@@ -166,7 +167,7 @@ export function buildUserColumns({
       title: '流量',
       key: 'total_used',
       dataIndex: 'total_used',
-      width: 152,
+      width: 148,
       sorter: true,
       render: (_, row) => {
         // transfer_enable = 0 表示没有配额（新建用户 / 无订阅），
@@ -218,7 +219,7 @@ export function buildUserColumns({
       title: '设备',
       key: 'alive_ip',
       dataIndex: 'alive_ip',
-      width: 76,
+      width: 68,
       render: (_, row) => {
         const limit = row.device_limit
         const label = (

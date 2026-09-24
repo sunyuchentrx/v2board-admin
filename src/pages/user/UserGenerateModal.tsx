@@ -269,13 +269,14 @@ export default function UserGenerateModal({ open, onClose, onDone }: Props) {
       // 执行中不许关：关掉再打开就能重复提交，而前一个请求在后端还在跑
       closable={!submitting}
       keyboard={!submitting}
-      maskClosable={!submitting}
+      // 始终不允许点遮罩关闭：单个生成超时后，弹窗里的初始密码是唯一一份，误点一下就丢了
+      maskClosable={false}
       cancelButtonProps={{ disabled: submitting }}
       width={640}
       destroyOnHidden
-      // body 限高 100vh - 240 后弹窗最高约 100vh - 88（头 + 尾约 152px），top 44 让长弹窗上下留白一致；
+      // body 限高 100vh - 240 后弹窗最高约 100vh - 112（头 + 尾约 128px），top 56 让长弹窗上下各留 56px；
       // 默认 top 100 时底部只剩约 12px，遮罩还会多出一截滚动。不用 centered：切换内容时弹窗会上下跳
-      style={{ top: 44 }}
+      style={{ top: 56 }}
       styles={{ body: { maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' } }}
     >
       <div className="user-page-stack">

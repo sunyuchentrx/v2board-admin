@@ -87,12 +87,20 @@ interface FormValues {
   tags: string[] | null
 }
 
+/** 允许渲染成链接的地址协议 */
+const SAFE_URL = /^https?:\/\//i
+
 /** 空值占位「—」（有值的次要列用 .content-muted，对比度更高） */
 const Muted = () => <Typography.Text type="secondary">—</Typography.Text>
 
 export default function NoticeList() {
   const qc = useQueryClient()
   const formRef = useRef<FormInstance<FormValues>>(null)
+  /**
+   * 正在切换「显示」的行（可以同时有多行），开关上显示 loading、期间不可再点。
+   * 后端 notice/show 是取反：连点两下等于没改，数据过期时还会反成相反的状态。
+   */
+  const [toggling, setToggling] = useState<ReadonlySet<number>>(() => new Set())
   /** 弹窗对应的公告：null 新增；关闭动画结束（afterClose）才清空，动画期间标题和按钮不跳变 */
   const [editing, setEditing] = useState<AdminNotice | null | undefined>(undefined)
   const [open, setOpen] = useState(false)
@@ -130,6 +138,25 @@ export default function NoticeList() {
         tags: parseTags(editing.tags),
       }
     : undefined
+
+  async function toggleShow(row: AdminNotice) {
+    if (toggling.has(row.id)) return
+    setToggling((prev) => new Set(prev).add(row.id))
+    try {
+      // 后端是取反
+      await toggleNoticeShow(row.id)
+      message.success('已更新')
+      reload()
+    } catch {
+      // 拦截器已提示
+    } finally {
+      setToggling((prev) => {
+        const next = new Set(prev)
+        next.delete(row.id)
+        return next
+      })
+    }
+  }
 
   async function handleOk() {
     const form = formRef.current
@@ -244,7 +271,9 @@ export default function NoticeList() {
               dataIndex: 'img_url',
               width: 96,
               render: (v: string | null) =>
-                v ? (
+                // 只有 http(s) 地址才渲染成可点链接：img_url 员工账号也能写（StaffRoute notice/save），
+                // 后端只校验 nullable|url，不能指望它挡住 javascript: 之类的协议
+                v && SAFE_URL.test(v) ? (
                   <a
                     className="content-img-link"
                     href={v}
@@ -277,12 +306,8 @@ export default function NoticeList() {
                 <Switch
                   size="small"
                   checked={row.show === 1}
-                  onChange={async () => {
-                    // 后端是取反
-                    await toggleNoticeShow(row.id)
-                    message.success('已更新')
-                    reload()
-                  }}
+                  loading={toggling.has(row.id)}
+                  onChange={() => void toggleShow(row)}
                 />
               ),
             },

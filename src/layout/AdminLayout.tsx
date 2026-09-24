@@ -70,7 +70,8 @@ function Brand({ collapsed, dark }: { collapsed: boolean; dark: boolean }) {
   return (
     <div className={`app-brand${collapsed ? ' is-collapsed' : ''}${dark ? ' is-dark' : ''}`}>
       {settings.logo ? (
-        <img className="app-brand-logo" src={settings.logo} alt="" />
+        // no-referrer：logo 常放在外部图床，别让 Referer 把后台地址（secure_path）带过去
+        <img className="app-brand-logo" src={settings.logo} alt="" referrerPolicy="no-referrer" />
       ) : (
         <span className="app-brand-mark">{initial}</span>
       )}

@@ -219,23 +219,24 @@ export default function UserList() {
             </Typography.Text>
           </Space>
         }
-        // 手机上刷新 / 导出只显示图标（带 tooltip），四个按钮 + 列设置才能排成一行
+        // 手机上刷新只显示图标（带 tooltip），导出收进「批量操作」菜单（它同样按筛选结果），
+        // 这样工具栏在 360 / 375 宽下也能和列设置排成一行
         toolBarRender={() => [
           <Tooltip key="reload" title={wide ? undefined : '刷新'}>
             <Button icon={<ReloadOutlined />} onClick={reload} aria-label={wide ? undefined : '刷新'}>
               {wide && '刷新'}
             </Button>
           </Tooltip>,
-          <Tooltip key="export" title={wide ? undefined : '导出 CSV（按筛选结果）'}>
+          wide && (
             <Button
+              key="export"
               icon={<DownloadOutlined />}
               loading={exporting}
               onClick={handleExport}
-              aria-label={wide ? undefined : '导出 CSV'}
             >
-              {wide && '导出 CSV'}
+              导出 CSV
             </Button>
-          </Tooltip>,
+          ),
           <Dropdown
             key="bulk"
             // 必须显式指定 click：antd Dropdown 默认 hover 触发，
@@ -246,6 +247,17 @@ export default function UserList() {
               // 用户改了筛选条件没点查询时就是错的。准确数量由弹窗打开时
               // 按当前条件重新查询后给出。
               items: [
+                  ...(wide
+                    ? []
+                    : [
+                        {
+                          key: 'export',
+                          icon: <DownloadOutlined />,
+                          label: exporting ? '正在导出…' : '导出 CSV（按筛选结果）',
+                          disabled: exporting,
+                        },
+                        { type: 'divider' as const },
+                      ]),
                 {
                   key: 'sendMail',
                   icon: <MailOutlined />,
@@ -265,7 +277,10 @@ export default function UserList() {
                   danger: true,
                 },
               ],
-              onClick: ({ key }) => setBulkAction(key as BulkAction),
+              onClick: ({ key }) => {
+                if (key === 'export') void handleExport()
+                else setBulkAction(key as BulkAction)
+              },
             }}
           >
             <Button>
@@ -283,7 +298,7 @@ export default function UserList() {
           >
             生成用户
           </Button>,
-        ]}
+        ].filter(Boolean)}
       />
 
       <UserEditModal

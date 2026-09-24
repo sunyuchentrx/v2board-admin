@@ -314,9 +314,9 @@ function BulkActionDialog({
       width={640}
       destroyOnHidden
       maskClosable={false}
-      // body 限高 100vh - 240 后弹窗最高约 100vh - 88（头 + 尾约 152px），top 44 让长弹窗上下留白一致；
+      // body 限高 100vh - 240 后弹窗最高约 100vh - 112（头 + 尾约 128px），top 56 让长弹窗上下各留 56px；
       // 默认 top 100 时底部只剩约 12px，遮罩还会多出一截滚动。不用 centered：切换内容时弹窗会上下跳
-      style={{ top: 44 }}
+      style={{ top: 56 }}
       styles={{ body: { maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' } }}
     >
       <div className="user-page-stack">

@@ -60,7 +60,8 @@ export default function Login() {
       <div className="login-panel">
         <div className="login-brand">
           {settings.logo ? (
-            <img className="login-logo" src={settings.logo} alt="" />
+            // no-referrer：logo 常放在外部图床，别让 Referer 把后台地址（secure_path）带过去
+            <img className="login-logo" src={settings.logo} alt="" referrerPolicy="no-referrer" />
           ) : (
             <span className="login-mark">
               {(settings.title || 'V').trim().charAt(0).toUpperCase()}

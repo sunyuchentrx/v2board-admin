@@ -853,7 +853,13 @@ export default function ConfigPage() {
       </div>
       <Space size={8} className="config-page-savebar-actions">
         <Tooltip title={narrow ? '重新读取' : undefined}>
-          <Button icon={<ReloadOutlined />} onClick={reload} aria-label="重新读取">
+          {/* 保存栏在 <Form disabled={!populated}> 里，显式 disabled={false}：首次读取失败时恰恰要靠它重试 */}
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={reload}
+            aria-label="重新读取"
+            disabled={false}
+          >
             {narrow ? null : '重新读取'}
           </Button>
         </Tooltip>

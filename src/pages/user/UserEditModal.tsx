@@ -377,9 +377,9 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
       width={760}
       destroyOnHidden
       maskClosable={false}
-      // body 限高 100vh - 240 后弹窗最高约 100vh - 88（头 + 尾约 152px），top 44 让长弹窗上下留白一致；
+      // body 限高 100vh - 240 后弹窗最高约 100vh - 112（头 + 尾约 128px），top 56 让长弹窗上下各留 56px；
       // 默认 top 100 时底部只剩约 12px，遮罩还会多出一截滚动。不用 centered：切换内容时弹窗会上下跳
-      style={{ top: 44 }}
+      style={{ top: 56 }}
       styles={{ body: { maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' } }}
     >
       {detailState.status === 'error' ? (
@@ -602,25 +602,26 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
 
             <FormSection title="权限与状态">
               <Row gutter={16}>
-                <Col xs={24} sm={8}>
+                <Col xs={24} sm={12}>
                   <SettingSwitch
                     name="banned"
                     title="封禁"
                     description="同时踢掉全部登录会话"
                   />
                 </Col>
-                <Col xs={24} sm={8}>
+                <Col xs={24} sm={12}>
                   <SettingSwitch name="is_admin" title="管理员" description="可登录管理后台" />
                 </Col>
-                <Col xs={24} sm={8}>
-                  {/* 后端 StaffRoute：工单、公告之外，员工还能调 user/update、user/ban、user/sendMail */}
-                  <SettingSwitch
-                    name="is_staff"
-                    title="员工（客服）"
-                    description="可进员工后台：处理工单、发公告、编辑 / 封禁用户、群发邮件"
-                  />
-                </Col>
               </Row>
+              {/*
+                后端 StaffRoute：工单、公告之外，员工还能调 user/update、user/ban、user/sendMail。
+                这是授权开关，说明必须写全，所以单独占一整行，不挤在三分之一宽的卡片里折成三行
+              */}
+              <SettingSwitch
+                name="is_staff"
+                title="员工（客服）"
+                description="可进员工后台：处理工单、发公告、编辑 / 封禁用户、群发邮件"
+              />
             </FormSection>
           </Form>
         </Spin>

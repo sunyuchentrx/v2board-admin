@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  Alert,
   AutoComplete,
   Button,
   Card,
@@ -99,11 +100,24 @@ export default function KnowledgeList() {
 
   // 列表接口只 select 了 title/id/updated_at/category/show，
   // 正文（body）和 language 必须单独取详情
-  const { data: detail, isFetching: loadingDetail } = useQuery({
+  const {
+    data: detail,
+    isFetching: loadingDetail,
+    refetch: refetchDetail,
+  } = useQuery({
     queryKey: ['knowledge-detail', editingId],
     queryFn: () => fetchKnowledgeDetail(editingId as number),
     enabled: typeof editingId === 'number',
+    // 弹窗关掉就丢弃这条详情缓存，每次打开都重新取：命中缓存时回填的可能是旧内容
+    // （别人改过，或自己刚保存过），再点保存就会把那次修改悄悄回滚
+    gcTime: 0,
   })
+
+  /**
+   * 正在切换「显示」的行（可以同时有多行），开关上显示 loading、期间不可再点。
+   * 后端 knowledge/show 是取反：连点两下等于没改。
+   */
+  const [toggling, setToggling] = useState<ReadonlySet<number>>(() => new Set())
 
   const reload = () => {
     qc.invalidateQueries({ queryKey: ['knowledge-list'] })
@@ -119,6 +133,11 @@ export default function KnowledgeList() {
   })
 
   const isEdit = typeof editingId === 'number'
+  /** 编辑时详情没到就不能保存：表单是空的，保存会用空内容覆盖文章 */
+  const formReady = editingId === null || (isEdit && !!detail)
+  /** 详情没取到（接口报错或返回空）：给出错误和重试，而不是停在空表单上 */
+  const detailFailed = isEdit && !detail && !loadingDetail
+  const sorting = sortMutation.isPending
 
   /*
    * 表单回填：每次打开弹窗都挂载一张新表单（destroyOnHidden + key），用它自己的 FormInstance（经 ref 取），
@@ -147,7 +166,8 @@ export default function KnowledgeList() {
 
   /** 后端 sort 接口要传全量顺序 */
   function move(index: number, delta: number) {
-    if (!list) return
+    // 上一次排序还没回来时，list 还是旧顺序，基于它算出的全量顺序会把刚才那次改动覆盖掉
+    if (!list || sorting) return
     const next = [...list]
     const target = index + delta
     if (target < 0 || target >= next.length) return
@@ -156,6 +176,25 @@ export default function KnowledgeList() {
     next[index] = b
     next[target] = a
     sortMutation.mutate(next.map((k) => k.id))
+  }
+
+  async function toggleShow(row: AdminKnowledgeListItem) {
+    if (toggling.has(row.id)) return
+    setToggling((prev) => new Set(prev).add(row.id))
+    try {
+      // 后端是取反
+      await toggleKnowledgeShow(row.id)
+      message.success('已更新')
+      reload()
+    } catch {
+      // 拦截器已提示
+    } finally {
+      setToggling((prev) => {
+        const next = new Set(prev)
+        next.delete(row.id)
+        return next
+      })
+    }
   }
 
   async function handleOk() {
@@ -224,14 +263,14 @@ export default function KnowledgeList() {
         key: 'up',
         label: '上移',
         icon: <ArrowUpOutlined />,
-        disabled: index === 0,
+        disabled: index === 0 || sorting,
         onClick: () => move(index, -1),
       },
       {
         key: 'down',
         label: '下移',
         icon: <ArrowDownOutlined />,
-        disabled: index === lastIndex,
+        disabled: index === lastIndex || sorting,
         onClick: () => move(index, 1),
       },
       remove,
@@ -262,7 +301,7 @@ export default function KnowledgeList() {
       >
         <Table<AdminKnowledgeListItem>
           rowKey="id"
-          loading={isFetching || sortMutation.isPending}
+          loading={isFetching || sorting}
           dataSource={list ?? []}
           pagination={false}
           // 桌面：定宽列合计 672 + 标题最少 188 = 860。
@@ -283,7 +322,7 @@ export default function KnowledgeList() {
                       size="small"
                       icon={<ArrowUpOutlined />}
                       aria-label="上移"
-                      disabled={index === 0}
+                      disabled={index === 0 || sorting}
                       onClick={() => move(index, -1)}
                     />
                   </Tooltip>
@@ -294,7 +333,7 @@ export default function KnowledgeList() {
                       size="small"
                       icon={<ArrowDownOutlined />}
                       aria-label="下移"
-                      disabled={index === lastIndex}
+                      disabled={index === lastIndex || sorting}
                       onClick={() => move(index, 1)}
                     />
                   </Tooltip>
@@ -351,11 +390,8 @@ export default function KnowledgeList() {
                 <Switch
                   size="small"
                   checked={row.show === 1}
-                  onChange={async () => {
-                    await toggleKnowledgeShow(row.id)
-                    message.success('已更新')
-                    reload()
-                  }}
+                  loading={toggling.has(row.id)}
+                  onChange={() => void toggleShow(row)}
                 />
               ),
             },
@@ -392,12 +428,27 @@ export default function KnowledgeList() {
         okText={isEdit ? '保存' : '创建'}
         cancelText="取消"
         confirmLoading={submitting}
+        okButtonProps={{ disabled: !formReady }}
         width={960}
         maskClosable={false}
         destroyOnHidden
         // 弹窗距顶约 100px、头尾约 140px，再留 40px：手机上底边（含圆角）不出视口，不会弹窗和页面双重滚动
         styles={{ body: { maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' } }}
       >
+        {detailFailed && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="文章详情加载失败，暂不能保存"
+            description="可能是网络问题，或文章已被删除。可以重试，或关闭后刷新列表再编辑。"
+            action={
+              <Button size="small" icon={<ReloadOutlined />} onClick={() => void refetchDetail()}>
+                重试
+              </Button>
+            }
+          />
+        )}
         <Spin spinning={loadingDetail}>
           <Form<FormValues>
             key={editingId ?? 'new'}
