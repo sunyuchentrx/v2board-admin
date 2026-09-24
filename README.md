@@ -42,6 +42,138 @@ sourcemap，没有公开的前端源码），无法二次开发。本项目照�
   编辑表单按最新数据回填、配置读取失败时禁止保存等（见 [docs/PROGRESS.md](docs/PROGRESS.md)）
 - 与原后台**可并存**：挂在独立路由，原后台不受影响，可随时切回
 
+## 界面预览
+
+> 截图由 [`dev/shot/gallery.mjs`](dev/shot/gallery.mjs) 基于自带 mock 后端的假数据生成（桌面端 1440×900），点击可看原图。
+
+<p align="center">
+  <a href="docs/screenshots/dashboard.webp"><img src="docs/screenshots/dashboard.webp" alt="仪表盘"></a>
+  <br><sub>仪表盘：关键指标、31 天趋势、流量排行</sub>
+</p>
+
+<table>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/dashboard-dark.webp"><img src="docs/screenshots/dashboard-dark.webp" alt="仪表盘 · 深色模式"></a>
+      <br><sub>仪表盘 · 深色模式</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/login.webp"><img src="docs/screenshots/login.webp" alt="登录页"></a>
+      <br><sub>登录页</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/users.webp"><img src="docs/screenshots/users.webp" alt="用户管理"></a>
+      <br><sub>用户管理</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/user-edit.webp"><img src="docs/screenshots/user-edit.webp" alt="编辑用户：分组表单、单位后缀、开关行"></a>
+      <br><sub>编辑用户：分组表单、单位后缀、开关行</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/user-bulk.webp"><img src="docs/screenshots/user-bulk.webp" alt="批量封禁：影响范围统计 + 手输人数确认"></a>
+      <br><sub>批量封禁：影响范围统计 + 手输人数确认</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/orders.webp"><img src="docs/screenshots/orders.webp" alt="订单管理：状态 / 佣金状态一目了然"></a>
+      <br><sub>订单管理：状态 / 佣金状态一目了然</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/order-detail.webp"><img src="docs/screenshots/order-detail.webp" alt="订单详情"></a>
+      <br><sub>订单详情</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/plans.webp"><img src="docs/screenshots/plans.webp" alt="套餐管理：配额与各周期售价"></a>
+      <br><sub>套餐管理：配额与各周期售价</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/plan-edit.webp"><img src="docs/screenshots/plan-edit.webp" alt="编辑套餐"></a>
+      <br><sub>编辑套餐</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/coupons.webp"><img src="docs/screenshots/coupons.webp" alt="优惠券：减免比例自动换算折数"></a>
+      <br><sub>优惠券：减免比例自动换算折数</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/coupon-edit-dark.webp"><img src="docs/screenshots/coupon-edit-dark.webp" alt="编辑优惠券 · 深色模式"></a>
+      <br><sub>编辑优惠券 · 深色模式</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/giftcards.webp"><img src="docs/screenshots/giftcards.webp" alt="礼品卡"></a>
+      <br><sub>礼品卡</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/notices.webp"><img src="docs/screenshots/notices.webp" alt="公告管理"></a>
+      <br><sub>公告管理</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/knowledge-edit.webp"><img src="docs/screenshots/knowledge-edit.webp" alt="编辑知识库文章"></a>
+      <br><sub>编辑知识库文章</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/servers.webp"><img src="docs/screenshots/servers.webp" alt="节点管理：在线状态、协议、倍率"></a>
+      <br><sub>节点管理：在线状态、协议、倍率</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/server-edit.webp"><img src="docs/screenshots/server-edit.webp" alt="编辑节点（VLESS / Reality）"></a>
+      <br><sub>编辑节点（VLESS / Reality）</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/server-routes.webp"><img src="docs/screenshots/server-routes.webp" alt="路由规则"></a>
+      <br><sub>路由规则</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/tickets.webp"><img src="docs/screenshots/tickets.webp" alt="工单管理"></a>
+      <br><sub>工单管理</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/ticket-chat.webp"><img src="docs/screenshots/ticket-chat.webp" alt="工单对话"></a>
+      <br><sub>工单对话</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/config.webp"><img src="docs/screenshots/config.webp" alt="系统配置：分组导航 + 吸底保存栏"></a>
+      <br><sub>系统配置：分组导航 + 吸底保存栏</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/config-dark.webp"><img src="docs/screenshots/config-dark.webp" alt="系统配置 · 深色模式"></a>
+      <br><sub>系统配置 · 深色模式</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/payments.webp"><img src="docs/screenshots/payments.webp" alt="支付配置"></a>
+      <br><sub>支付配置</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/themes.webp"><img src="docs/screenshots/themes.webp" alt="前台主题配置"></a>
+      <br><sub>前台主题配置</sub>
+    </td>
+    <td width="50%" align="center" valign="top">
+      <a href="docs/screenshots/system-dark.webp"><img src="docs/screenshots/system-dark.webp" alt="系统状态 · 深色模式"></a>
+      <br><sub>系统状态 · 深色模式</sub>
+    </td>
+  </tr>
+</table>
+
 ## 环境要求
 
 - Node 18+
@@ -80,7 +212,7 @@ npm run mock       # 另开一个终端，监听 127.0.0.1:18080
 npm run dev        # 打开 http://localhost:5173/admin/v2
 ```
 
-截图验收工具等详见 [dev/README.md](dev/README.md)。
+截图验收工具、README 截图的重新生成方法详见 [dev/README.md](dev/README.md)。
 
 ## 构建
 
