@@ -1,0 +1,213 @@
+/*
+ * 支付配置页的页面级样式（类名统一 payment- 前缀，避免污染全局）。
+ * 颜色一律走 --va-* token，暗色模式自动跟随。
+ */
+
+/* 卡片标题旁的次要说明 */
+.payment-card-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.payment-card-name {
+  white-space: nowrap;
+}
+.payment-card-desc.ant-typography {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* 排序：上移/下移两个按钮收在一个小胶囊里 */
+.payment-sort {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px;
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius);
+  background: var(--va-color-fill-alter);
+}
+.payment-sort .ant-btn.ant-btn-sm {
+  width: 26px;
+  border-radius: var(--va-border-radius-sm);
+}
+.payment-sort-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--va-color-border-secondary);
+}
+
+/* 名称列：图标 + 名称 / UUID */
+.payment-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.payment-avatar.ant-avatar {
+  flex-shrink: 0;
+  border-radius: var(--va-border-radius);
+  background: color-mix(in srgb, var(--va-color-primary) 12%, transparent);
+  color: var(--va-color-primary);
+  font-size: 16px;
+}
+.payment-avatar.ant-avatar.ant-avatar-image {
+  background: var(--va-color-fill-alter);
+  border: 1px solid var(--va-color-border-secondary);
+}
+/* 暗色算法下主色很暗（#463fc6），放在 12% 淡底上几乎看不见：改用暗色的主色淡底 + 亮一档的主色字 */
+html[data-theme='dark'] .payment-avatar.ant-avatar:not(.ant-avatar-image) {
+  background: var(--va-color-primary-bg);
+  color: var(--va-color-primary-text-hover);
+}
+.payment-avatar.ant-avatar > img {
+  object-fit: contain;
+}
+.payment-name-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.payment-name-main,
+.payment-name-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.payment-name-main.ant-typography {
+  font-weight: 500;
+  color: var(--va-color-text);
+}
+.payment-name-sub {
+  font-family: var(--va-font-family-code);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--va-color-text-tertiary);
+}
+
+/* 已停用的网关：名称与图标淡一点，一眼能看出来 */
+.payment-row-off .payment-name-main.ant-typography {
+  color: var(--va-color-text-secondary);
+}
+.payment-row-off .payment-avatar.ant-avatar {
+  opacity: 0.55;
+}
+
+/* 网关类名：等宽中性标签 */
+.payment-gateway-tag.ant-tag {
+  margin: 0;
+  font-family: var(--va-font-family-code);
+  font-size: 12px;
+}
+
+/* 手续费：「¥1.00 + 3.50%」，加号淡显 */
+.payment-fee {
+  white-space: nowrap;
+}
+.payment-fee-plus {
+  color: var(--va-color-text-tertiary);
+}
+
+/*
+ * 回调地址：等宽、中间省略（「域名 /…/ uuid」，域名太长时域名自己省略），
+ * 复制按钮单独一个触发区，始终可见
+ */
+.payment-notify-cell {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.payment-notify {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--va-color-text-tertiary);
+  cursor: default;
+}
+.payment-notify-host {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--va-color-text);
+}
+.payment-notify-tail {
+  flex-shrink: 0;
+}
+.payment-notify-copy.ant-typography {
+  flex-shrink: 0;
+  margin: 0;
+  line-height: 20px;
+}
+.payment-notify-copy.ant-typography .ant-typography-copy {
+  margin-inline-start: 2px;
+}
+/* 完整回调地址的 tooltip：默认 250px 太窄，地址会被拆成三行 */
+.payment-notify-tooltip.ant-tooltip {
+  max-width: min(560px, calc(100vw - 32px));
+}
+.payment-notify-tip {
+  font-family: var(--va-font-family-code);
+  font-size: 12px;
+  word-break: break-all;
+}
+.payment-notify-missing.ant-tag {
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* 弹窗 */
+.payment-modal-id.ant-typography {
+  font-weight: 400;
+  margin-inline-start: 6px;
+}
+.payment-modal-alert.ant-alert {
+  margin-bottom: 20px;
+}
+
+/*
+ * 支付回调域名是「支付回调」小节的最后一项：出错时 antd 用错误提示占掉 item 的下边距，
+ * 提示文字会贴住下一小节的分隔线，这里给它留一点余量
+ */
+.payment-notify-item.ant-form-item-with-help .ant-form-item-explain {
+  padding-bottom: 8px;
+}
+
+/* 「支付回调」小节说明里的固定路径 */
+.payment-notify-path {
+  font-family: var(--va-font-family-code);
+  font-size: 12px;
+  color: var(--va-color-text-secondary);
+  word-break: break-all;
+}
+
+/* 网关配置区：未选网关 / 加载中 / 无字段时的占位 */
+.payment-config-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 92px;
+  margin-bottom: 18px;
+  border: 1px dashed var(--va-color-border);
+  border-radius: var(--va-border-radius-lg);
+  background: var(--va-color-fill-alter);
+  color: var(--va-color-text-tertiary);
+  font-size: 13px;
+}
+.payment-config-empty.is-loading {
+  border-style: solid;
+  border-color: var(--va-color-border-secondary);
+}
+
+@media (max-width: 575px) {
+  /* 手机上卡片头只放标题和按钮，说明文字让位 */
+  .payment-card-desc.ant-typography {
+    display: none;
+  }
+}

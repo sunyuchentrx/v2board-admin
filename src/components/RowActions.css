@@ -1,0 +1,9 @@
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+.row-actions .ant-btn-link.ant-btn-sm {
+  padding-inline: 6px;
+}

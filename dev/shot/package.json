@@ -1,0 +1,9 @@
+{
+  "name": "v2board-admin-shot",
+  "private": true,
+  "type": "module",
+  "description": "本地截图工具：puppeteer-core + 本机 Chrome，自动注入登录态。见 dev/README.md",
+  "dependencies": {
+    "puppeteer-core": "^23.11.1"
+  }
+}

@@ -1,5 +1,5 @@
 import { ADMIN_ENDPOINTS } from './endpoints'
-import { call } from './request'
+import { call, type CallOptions } from './request'
 
 /**
  * 系统配置。
@@ -50,9 +50,20 @@ export function fetchConfigGroup(key: string) {
  * ⚠️ 调用后后端会自杀重启，这个 Promise 很可能 reject（连接被切断），
  * 但配置**已经写入**了。调用方不要把 reject 当成保存失败，
  * 应该改为轮询探活确认后端是否恢复。
+ *
+ * ⚠️ 但反过来，**4xx 一定没写入**：ConfigSave 是 FormRequest，校验在进控制器之前完成，
+ * 422 时 File::put 根本没执行；403/404/429 同样发生在中间件或路由层。
+ * 只有「没有响应（断连/超时）」和 5xx 才可能是「写了一半」。
+ * 而且 ConfigSave 是整单校验：一个字段不合法，同一次提交里所有字段都不写。
+ *
+ * 所以调用方应传 `{ handle422: true }`，自己把 fieldErrors 落到表单上，
+ * 并且绝不能把 422 当成「已写入未生效」。
+ *
+ * 另外，**只提交确实拿到过或改过的字段**。save 对缺失的键保留旧值，
+ * 但对传进来的键无条件覆盖 —— 传一个没回填的开关 0，就等于把它关掉。
  */
-export function saveConfig(values: Record<string, unknown>) {
-  return call<boolean>(ADMIN_ENDPOINTS.config.save, values)
+export function saveConfig(values: Record<string, unknown>, options?: CallOptions) {
+  return call<boolean>(ADMIN_ENDPOINTS.config.save, values, options)
 }
 
 /** 可用的邮件模板目录名（resources/views/mail/ 下的子目录） */

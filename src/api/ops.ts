@@ -93,8 +93,12 @@ export interface AdminPayment {
   sort: number | null
   created_at: number
   updated_at: number
-  /** 后端 fetch 附加：完整的回调地址（含 notify_domain 覆盖后的结果） */
-  notify_url?: string
+  /**
+   * 后端 fetch 附加：完整的回调地址 = notify_domain + /api/v1/guest/payment/notify/{payment}/{uuid}。
+   * notify_domain 为空时是 null —— 后端**不再回退到站点地址**，这种网关用户下单会直接
+   * abort(500,'请先配置支付回调域名')（PaymentService::pay）。
+   */
+  notify_url?: string | null
 }
 
 /** 不分页，按 sort 升序 */
@@ -130,8 +134,12 @@ export interface PaymentSavePayload {
   /** 各网关自己的配置键值 */
   config: Record<string, unknown>
   icon?: string | null
-  /** 必须是合法 URL（nullable|url） */
-  notify_domain?: string | null
+  /**
+   * **必填**，且必须是合法 URL（PaymentController::save 的 required|url，
+   * 报错文案「请填写支付回调域名，不能使用后端地址」）。
+   * 回调 URL 只用它拼，不会回退到站点地址；要填支付网关能从公网访问、并能转发到后端的域名。
+   */
+  notify_domain: string
   /** 分 */
   handling_fee_fixed?: number | null
   /** 0.1 - 100 之间（后端 between:0.1,100） */
@@ -141,7 +149,8 @@ export interface PaymentSavePayload {
 /**
  * 新增/编辑支付方式。
  * ⚠️ 后端第一件事就是检查 config('v2board.app_url')，没配站点地址会直接
- * abort(500,'请在站点配置中配置站点地址') —— 因为回调地址要靠它拼。
+ * abort(500,'请在站点配置中配置站点地址')。这是上游遗留的检查：本仓库的回调地址
+ * 已经改成只用 notify_domain 拼（见 PaymentService::pay），但这道检查还在，照样会拦。
  */
 export function savePayment(payload: PaymentSavePayload) {
   return call<boolean>(ADMIN_ENDPOINTS.payment.save, {
@@ -149,7 +158,10 @@ export function savePayment(payload: PaymentSavePayload) {
   } as unknown as Record<string, unknown>)
 }
 
-/** 切换启用（取反，不接受目标值） */
+/**
+ * 切换启用（取反，不接受目标值）。
+ * ⚠️ 取反语义：连点两次等于没改，调用方要在请求 + 刷新完成前禁用开关。
+ */
 export function togglePaymentEnable(id: number) {
   return call<boolean>(ADMIN_ENDPOINTS.payment.show, { id })
 }

@@ -1,0 +1,254 @@
+/* 工单管理页面级样式：颜色全部走 --va-* token，暗色模式自动跟随 */
+
+/* ───────────── 过滤条 ───────────── */
+.ticket-page-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--va-color-bg-container);
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius-lg);
+  box-shadow: var(--app-shadow-card);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.ticket-page-filter-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  /* 基准宽 = 两个下拉 + 邮箱最窄宽度；放得下时和按钮同一行，邮箱框吃掉剩余空间 */
+  flex: 1 1 526px;
+  min-width: 0;
+}
+.ticket-page-filter-status.ant-select {
+  width: 130px;
+}
+.ticket-page-filter-reply.ant-select {
+  width: 180px;
+}
+.ticket-page-filter-email.ant-input-affix-wrapper {
+  flex: 1 1 200px;
+  width: auto;
+  min-width: 0;
+  max-width: 320px;
+}
+.ticket-page-filter-icon {
+  color: var(--va-color-text-quaternary);
+}
+.ticket-page-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* 换到第二行时也靠右，和手机上的对齐方式一致 */
+  margin-inline-start: auto;
+}
+
+/* ───────────── 列表 ───────────── */
+.ticket-page-subject.is-pending {
+  font-weight: 600;
+}
+.ticket-page-nowrap {
+  white-space: nowrap;
+}
+
+/* ───────────── 会话抽屉 ───────────── */
+/* .ant-drawer-title 是 flex 子项，默认 min-width:auto 会被长主题撑出抽屉，省略号和元信息换行都失效 */
+.ticket-page-drawer .ant-drawer-title {
+  min-width: 0;
+  overflow: hidden;
+}
+.ticket-page-drawer-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.4;
+}
+.ticket-page-drawer-title > .ant-typography {
+  font-size: 15px;
+}
+/* 标题下的元信息行：状态/级别 + 编号、用户、创建时间；各项内部不折行，只在项之间换行 */
+.ticket-page-drawer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--va-color-text-tertiary);
+}
+.ticket-page-drawer-meta > span {
+  white-space: nowrap;
+}
+.ticket-page-drawer-meta > .ant-tag {
+  margin: 0;
+}
+.ticket-page-drawer-meta > .ant-tag + span:not(.ant-tag) {
+  margin-inline-start: 2px;
+}
+
+.ticket-page-thread-wrap {
+  min-height: 240px;
+}
+.ticket-page-thread {
+  padding: 20px 24px 8px;
+}
+.ticket-page-empty.ant-empty {
+  padding: 56px 0;
+  margin: 0;
+}
+
+.ticket-page-day {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 16px;
+}
+.ticket-page-day > span {
+  font-size: 12px;
+  line-height: 20px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--va-color-text-tertiary);
+  background: var(--va-color-fill-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.ticket-page-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.ticket-page-msg.is-admin {
+  flex-direction: row-reverse;
+}
+.ticket-page-avatar.ant-avatar {
+  flex-shrink: 0;
+  margin-top: 20px;
+}
+.is-user .ticket-page-avatar.ant-avatar {
+  background: var(--va-color-bg-container);
+  color: var(--va-color-text-secondary);
+  border: 1px solid var(--va-color-border);
+}
+.is-admin .ticket-page-avatar.ant-avatar {
+  background: var(--va-color-primary);
+  color: var(--va-color-text-light-solid);
+}
+
+.ticket-page-msg-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: min(76%, 520px);
+}
+.is-admin .ticket-page-msg-body {
+  align-items: flex-end;
+}
+.ticket-page-msg-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  margin-bottom: 4px;
+  color: var(--va-color-text-tertiary);
+}
+.is-admin .ticket-page-msg-meta {
+  flex-direction: row-reverse;
+}
+.ticket-page-msg-name {
+  font-weight: 500;
+  color: var(--va-color-text-secondary);
+}
+
+/* 纯文本气泡：保留换行，长链接强制折行 */
+.ticket-page-bubble {
+  padding: 9px 13px;
+  font-size: 14px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-radius: 14px;
+}
+.is-user .ticket-page-bubble {
+  color: var(--va-color-text);
+  background: var(--va-color-bg-container);
+  border: 1px solid var(--va-color-border-secondary);
+  border-start-start-radius: 4px;
+  box-shadow: var(--app-shadow-card);
+}
+.is-admin .ticket-page-bubble {
+  color: var(--va-color-text-light-solid);
+  background: var(--va-color-primary);
+  border: 1px solid var(--va-color-primary);
+  border-start-end-radius: 4px;
+}
+
+/* 回复框（放在 Drawer footer 里，天然吸底） */
+.ticket-page-composer-input.ant-form-item {
+  margin-bottom: 10px;
+}
+/* 「回复不能为空」和下面的提示行之间留出呼吸 */
+.ticket-page-composer-input .ant-form-item-explain {
+  padding-top: 2px;
+  min-height: 22px;
+}
+.ticket-page-composer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ticket-page-composer-hint.ant-typography {
+  font-size: 12px;
+  min-width: 0;
+}
+.ticket-page-closed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--va-color-text-tertiary);
+}
+
+/* ───────────── 手机 ───────────── */
+@media (max-width: 640px) {
+  .ticket-page-filter-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    flex-basis: 100%;
+  }
+  .ticket-page-filter-status.ant-select,
+  .ticket-page-filter-reply.ant-select,
+  .ticket-page-filter-email.ant-input-affix-wrapper {
+    width: 100%;
+    max-width: none;
+  }
+  .ticket-page-filter-email.ant-input-affix-wrapper {
+    grid-column: 1 / -1;
+  }
+  .ticket-page-filter-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .ticket-page-thread {
+    padding: 16px 14px 4px;
+  }
+  .ticket-page-msg-body {
+    max-width: 82%;
+  }
+  .ticket-page-composer-hint.ant-typography {
+    display: none;
+  }
+  .ticket-page-composer-bar {
+    justify-content: flex-end;
+  }
+}

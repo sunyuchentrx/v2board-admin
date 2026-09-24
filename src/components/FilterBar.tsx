@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Button, Card, Input, InputNumber, Select, Space, Tag } from 'antd'
-import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { Button, Input, InputNumber, Select, Space, Tag, Typography } from 'antd'
+import { ClearOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import './FilterBar.css'
 
 /**
  * 通用过滤条。
@@ -73,7 +74,7 @@ export default function FilterBar<K extends string>({
     if (field.input === 'select') {
       return (
         <Select
-          style={{ width: 150 }}
+          className="filter-bar-value"
           value={draftValue === '' ? undefined : draftValue}
           onChange={setDraftValue}
           placeholder={field.placeholder ?? '选择'}
@@ -87,7 +88,7 @@ export default function FilterBar<K extends string>({
     if (field.input === 'number') {
       return (
         <InputNumber
-          style={{ width: 150 }}
+          className="filter-bar-value"
           value={draftValue === '' ? null : Number(draftValue)}
           onChange={(v) => setDraftValue(v === null ? '' : String(v))}
           placeholder={field.placeholder ?? '数值'}
@@ -97,10 +98,10 @@ export default function FilterBar<K extends string>({
     }
     return (
       <Input
-        style={{ width: 190 }}
+        className="filter-bar-value"
         value={draftValue}
         onChange={(e) => setDraftValue(e.target.value)}
-        placeholder={field.placeholder ?? '值'}
+        placeholder={field.placeholder ?? '输入值后回车添加'}
         onPressEnter={addFilter}
         allowClear
       />
@@ -108,71 +109,86 @@ export default function FilterBar<K extends string>({
   }
 
   return (
-    <Card size="small" style={{ marginBottom: 12 }}>
-      <Space wrap size={8}>
-        <Select<K>
-          style={{ width: 158 }}
-          value={draftKey}
-          onChange={(k) => {
-            setDraftKey(k)
-            setDraftValue('')
-            const next = fields.find((f) => f.key === k)
-            setDraftCondition(next?.input === 'text' ? '模糊' : '=')
-          }}
-          options={fields.map((f) => ({ value: f.key, label: f.label }))}
-        />
-        <Select
-          style={{ width: 92 }}
-          value={draftCondition}
-          onChange={setDraftCondition}
-          options={conditions.map((c) => ({ value: c, label: c }))}
-        />
-        {renderValueInput()}
-        <Button icon={<PlusOutlined />} onClick={addFilter}>
-          添加条件
-        </Button>
-        <Button type="primary" icon={<SearchOutlined />} onClick={onSearch}>
-          查询
-        </Button>
-        {value.length > 0 && (
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={() => {
-              onChange([])
-              onSearch()
+    <div className="filter-bar">
+      <div className="filter-bar-row">
+        <Space.Compact className="filter-bar-builder">
+          <Select<K>
+            className="filter-bar-key"
+            value={draftKey}
+            onChange={(k) => {
+              setDraftKey(k)
+              setDraftValue('')
+              const next = fields.find((f) => f.key === k)
+              setDraftCondition(next?.input === 'text' ? '模糊' : '=')
             }}
-          >
-            清空条件
+            options={fields.map((f) => ({ value: f.key, label: f.label }))}
+            popupMatchSelectWidth={false}
+          />
+          <Select
+            className="filter-bar-cond"
+            value={draftCondition}
+            onChange={setDraftCondition}
+            options={conditions.map((c) => ({ value: c, label: c }))}
+            popupMatchSelectWidth={false}
+          />
+          {renderValueInput()}
+          <Button icon={<PlusOutlined />} onClick={addFilter} disabled={draftValue === ''}>
+            添加
           </Button>
-        )}
-        {extra}
-      </Space>
+        </Space.Compact>
+
+        <div className="filter-bar-actions">
+          {extra}
+          {value.length > 0 && (
+            <Button
+              icon={<ClearOutlined />}
+              onClick={() => {
+                onChange([])
+                onSearch()
+              }}
+            >
+              清空
+            </Button>
+          )}
+          <Button type="primary" icon={<SearchOutlined />} onClick={onSearch}>
+            查询
+          </Button>
+        </div>
+      </div>
 
       {value.length > 0 && (
-        <div style={{ marginTop: 10 }}>
-          <Space wrap size={4}>
-            {value.map((f, i) => {
-              const meta = fields.find((x) => x.key === f.key)
-              const shown =
-                meta?.input === 'select'
-                  ? (meta.options?.find((o) => String(o.value) === String(f.value))
-                      ?.label ?? String(f.value))
-                  : String(f.value)
-              return (
-                <Tag
-                  key={`${f.key}-${f.condition}-${f.value}-${i}`}
-                  closable
-                  color="blue"
-                  onClose={() => onChange(value.filter((_, idx) => idx !== i))}
-                >
-                  {meta?.label ?? f.key} {f.condition} {shown}
+        <div className="filter-bar-tags">
+          <span className="filter-bar-tags-label">筛选条件</span>
+          {value.map((f, i) => {
+            const meta = fields.find((x) => x.key === f.key)
+            const shown =
+              meta?.input === 'select'
+                ? (meta.options?.find((o) => String(o.value) === String(f.value))
+                    ?.label ?? String(f.value))
+                : String(f.value)
+            return (
+              <Tag
+                key={`${f.key}-${f.condition}-${f.value}-${i}`}
+                closable
+                bordered={false}
+                color="processing"
+                className="filter-bar-tag"
+                onClose={() => onChange(value.filter((_, idx) => idx !== i))}
+              >
+                <span className="filter-bar-tag-key">{meta?.label ?? f.key}</span>
+                <span className="filter-bar-tag-cond">{f.condition}</span>
+                <span className="filter-bar-tag-val">
+                  {shown}
                   {meta?.unit ? ` ${meta.unit}` : ''}
-                </Tag>
-              )
-            })}
-          </Space>
+                </span>
+              </Tag>
+            )
+          })}
+          <Typography.Text type="secondary" className="filter-bar-hint">
+            修改条件后点击「查询」生效
+          </Typography.Text>
         </div>
       )}
-    </Card>
+    </div>
   )
 }

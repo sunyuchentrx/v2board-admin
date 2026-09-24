@@ -1,0 +1,54 @@
+.setting-switch-item.ant-form-item {
+  height: calc(100% - var(--va-form-item-margin-bottom, 18px));
+}
+.setting-switch-item .ant-form-item-row,
+.setting-switch-item .ant-form-item-control,
+.setting-switch-item .ant-form-item-control-input,
+.setting-switch-item .ant-form-item-control-input-content {
+  height: 100%;
+}
+.setting-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius);
+  background: var(--va-color-fill-alter);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.setting-switch:hover {
+  border-color: var(--va-color-border);
+}
+.setting-switch.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.setting-switch-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.setting-switch-title {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--va-color-text);
+  line-height: 1.4;
+}
+.setting-switch-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--va-color-text-tertiary);
+}
+.setting-switch-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}

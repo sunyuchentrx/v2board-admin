@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Button, Card, Form, Input, Typography, message } from 'antd'
+import { Button, Form, Input, Typography, message } from 'antd'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { ApiError } from '@/api/client'
 import { NotAdminError, useAuth } from '@/auth/AuthContext'
 import { settings } from '@/settings'
+import './Login.css'
 
 interface LoginForm {
   email: string
@@ -25,8 +26,9 @@ export default function Login() {
         // 客户端判定，不经过 axios 拦截器，这里必须自己提示
         message.error(error.message)
       } else if (error instanceof ApiError && error.status === 422) {
-        // 拦截器刻意不弹 422，逐字段错误落到表单上。
-        // 后端返回的 key 是任意字符串，只认本表单确实存在的字段，其余走兜底提示。
+        // 登录请求带了 handle422（api/auth.ts），拦截器不弹 422，逐字段错误落到表单上。
+        // 后端返回的 key 是任意字符串，只认本表单确实存在的字段，其余走兜底提示
+        // （error.message 已被拦截器换成第一条字段错误，不是 Laravel 那句英文套话）。
         const formFields: (keyof LoginForm)[] = ['email', 'password']
         const fields = Object.entries(error.fieldErrors ?? {})
           .filter(([name]) => formFields.includes(name as keyof LoginForm))
@@ -40,7 +42,7 @@ export default function Login() {
           message.error(error.message)
         }
       }
-      // 其余错误（含密码错误的 HTTP 500）已由拦截器统一弹出，不重复提示
+      // 其余错误（含密码错误的 HTTP 500、超时）已由拦截器统一弹出，不重复提示
     } finally {
       setSubmitting(false)
     }
@@ -48,28 +50,26 @@ export default function Login() {
 
   return (
     <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-        background: '#f0f2f5',
-      }}
+      className="login-page"
+      style={
+        settings.backgroundUrl
+          ? { backgroundImage: `url(${JSON.stringify(settings.backgroundUrl)})` }
+          : undefined
+      }
     >
-      <Card style={{ width: 380 }}>
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+      <div className="login-panel">
+        <div className="login-brand">
           {settings.logo ? (
-            <img
-              src={settings.logo}
-              alt={settings.title}
-              style={{ height: 40, marginBottom: 12 }}
-            />
-          ) : null}
-          <Typography.Title level={4} style={{ margin: 0 }}>
+            <img className="login-logo" src={settings.logo} alt="" />
+          ) : (
+            <span className="login-mark">
+              {(settings.title || 'V').trim().charAt(0).toUpperCase()}
+            </span>
+          )}
+          <Typography.Title level={3} className="login-title">
             {settings.title}
           </Typography.Title>
-          <Typography.Text type="secondary">管理后台</Typography.Text>
+          <Typography.Text type="secondary">登录管理后台</Typography.Text>
         </div>
 
         <Form<LoginForm>
@@ -77,6 +77,7 @@ export default function Login() {
           layout="vertical"
           onFinish={handleSubmit}
           requiredMark={false}
+          size="large"
         >
           <Form.Item
             name="email"
@@ -87,10 +88,9 @@ export default function Login() {
             ]}
           >
             <Input
-              prefix={<UserOutlined />}
+              prefix={<UserOutlined className="login-input-icon" />}
               placeholder="admin@example.com"
               autoComplete="username"
-              size="large"
             />
           </Form.Item>
 
@@ -104,10 +104,9 @@ export default function Login() {
             ]}
           >
             <Input.Password
-              prefix={<LockOutlined />}
+              prefix={<LockOutlined className="login-input-icon" />}
               placeholder="请输入密码"
               autoComplete="current-password"
-              size="large"
             />
           </Form.Item>
 
@@ -115,19 +114,15 @@ export default function Login() {
             type="primary"
             htmlType="submit"
             loading={submitting}
-            size="large"
             block
+            className="login-submit"
           >
             登录
           </Button>
         </Form>
 
-        <div style={{ marginTop: 16, textAlign: 'center' }}>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            v{settings.version}
-          </Typography.Text>
-        </div>
-      </Card>
+        <div className="login-footer">v{settings.version}</div>
+      </div>
     </div>
   )
 }

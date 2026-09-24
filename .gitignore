@@ -13,3 +13,7 @@ npm-debug.log*
 # macOS 压缩包残留
 __MACOSX/
 ._*
+
+# 本地截图工具的依赖与产物
+dev/shot/node_modules
+dev/shot/out

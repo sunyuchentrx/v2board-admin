@@ -1,5 +1,5 @@
 import { adminApiBase } from '@/settings'
-import { http } from './client'
+import { LONG_TIMEOUT, http } from './client'
 import { ADMIN_ENDPOINTS } from './endpoints'
 import { call, callList } from './request'
 import type { DataResponse, PageQuery } from './types'
@@ -132,10 +132,16 @@ export function getUserInfoById(id: number) {
 /**
  * user/update 的提交体。
  *
- * ⚠️ 这个接口是**整体覆盖**语义，不是局部更新：
- *   - 不传 plan_id → 后端把 group_id 置 null（UserController.php:148）
- *   - 不传 invite_user_email → 后端把 invite_user_id 置 null（:156）
- * 所以表单必须把当前完整状态一起提交，漏字段会静默清空数据。
+ * ⚠️ 这个接口对**两个字段**是「缺省即清空」语义：
+ *   - 不传 plan_id → 后端把 group_id 置 null（UserController.php:152）
+ *   - 不传 invite_user_email → 后端把 invite_user_id 置 null（:160）
+ * 所以这两个字段在类型上是必填的，每次保存都必须按当前值带上。
+ *
+ * 其余可选字段（流量/余额/佣金/到期时间/限速等）在 UserUpdate.php 里都不是 required，
+ * validated() 只包含请求里出现的键，`$user->update($params)` 也只写这些键 ——
+ * **不传就不改**。编辑表单应该只提交管理员改过的字段：否则打开弹窗之后发生的
+ * 流量上报（TrafficUpdate 每分钟累加 u/d）、余额下单、续费、佣金到账都会被
+ * 表单里的旧值整体覆盖回去；流量还要经过 GB 换算，原样提交也会有精度损失。
  *
  * email / banned / is_admin / is_staff 在 UserUpdate.php 里是 required。
  */
@@ -144,30 +150,40 @@ export interface UserUpdatePayload {
   email: string
   /** 留空表示不改密码；后端 min:8 */
   password?: string
-  transfer_enable: number // 字节
+  transfer_enable?: number // 字节
   device_limit?: number | null
   expired_at?: number | null // unix 秒；null = 长期有效
   banned: 0 | 1
-  plan_id?: number | null
+  /** 必须每次都带：缺省会清空 group_id */
+  plan_id: number | null
   commission_rate?: number | null // 0-100
   discount?: number | null // 0-100
   is_admin: 0 | 1
   is_staff: 0 | 1
-  u: number // 字节
-  d: number // 字节
-  balance: number // 分
-  commission_type: number
-  commission_balance: number // 分
+  u?: number // 字节
+  d?: number // 字节
+  balance?: number // 分
+  commission_type?: number
+  commission_balance?: number // 分
   remarks?: string | null
   speed_limit?: number | null
-  /** 不在 UserUpdate 校验规则里，后端单独用 $request->input() 读 */
-  invite_user_email?: string | null
+  /**
+   * 不在 UserUpdate 校验规则里，后端单独用 $request->input() 读。
+   * 必须每次都带：空值会解除邀请关系；填了查不到的邮箱则保持原邀请人不变。
+   */
+  invite_user_email: string | null
 }
 
+/**
+ * 调用方（UserEditModal）自己把 422 逐字段落到表单上，所以传 handle422，
+ * 拦截器不再重复弹全局提示。
+ */
 export function updateUser(payload: UserUpdatePayload) {
-  return call<boolean>(ADMIN_ENDPOINTS.user.update, {
-    ...payload,
-  } as unknown as Record<string, unknown>)
+  return call<boolean>(
+    ADMIN_ENDPOINTS.user.update,
+    { ...payload } as unknown as Record<string, unknown>,
+    { handle422: true },
+  )
 }
 
 /** 重置订阅 token 与 uuid。用户的旧订阅链接会立刻失效。 */
@@ -211,32 +227,168 @@ export interface FilterScopedPayload {
   sort_type?: 'ASC' | 'DESC'
 }
 
+/*
+ * 超时：这几个接口在后端逐个用户处理（ban/allDel 对每个用户 removeAllSession，
+ * sendMail 用 cursor 逐个 dispatch 队列任务），用户量大时远超默认的 30 秒。
+ * 后端跑在 Workerman 常驻进程里，前端超时断开后它照样执行完 —— 前端若按 30 秒
+ * 报失败，管理员重试就会重复群发。所以统一用 LONG_TIMEOUT；真超时了由调用方
+ * 按「结果未知」处理（禁止原地重试），见 BulkActionModal。
+ */
+
 /** 封禁过滤结果命中的所有用户，并踢掉其全部登录会话。 */
 export function banUsersByFilter(payload: FilterScopedPayload) {
-  return call<boolean>(ADMIN_ENDPOINTS.user.ban, {
-    ...payload,
-  } as unknown as Record<string, unknown>)
+  return call<boolean>(
+    ADMIN_ENDPOINTS.user.ban,
+    { ...payload } as unknown as Record<string, unknown>,
+    { timeout: LONG_TIMEOUT },
+  )
 }
 
 /** 删除过滤结果命中的所有用户（不可恢复）。 */
 export function deleteUsersByFilter(payload: FilterScopedPayload) {
-  return call<boolean>(ADMIN_ENDPOINTS.user.allDel, {
-    ...payload,
-  } as unknown as Record<string, unknown>)
+  return call<boolean>(
+    ADMIN_ENDPOINTS.user.allDel,
+    { ...payload } as unknown as Record<string, unknown>,
+    { timeout: LONG_TIMEOUT },
+  )
 }
 
 /** 给过滤结果命中的所有用户群发邮件（走 send_email_mass 队列）。 */
 export function sendMailByFilter(
   payload: FilterScopedPayload & { subject: string; content: string },
 ) {
-  return call<boolean>(ADMIN_ENDPOINTS.user.sendMail, {
-    ...payload,
-  } as unknown as Record<string, unknown>)
+  return call<boolean>(
+    ADMIN_ENDPOINTS.user.sendMail,
+    { ...payload } as unknown as Record<string, unknown>,
+    { timeout: LONG_TIMEOUT },
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * 「结果未知」记录：超时后跨弹窗、跨刷新地拦住重复提交
+ * ------------------------------------------------------------------ */
+
+/**
+ * 长耗时接口超时后，后端多半还在跑或已经跑完（Workerman 常驻进程不会因为前端断开而中止）。
+ * 只在当次弹窗里锁住确认按钮不够：关掉再打开，组件状态就重置了。
+ *
+ * 大多数操作「关窗 → 刷新列表」就能看出结果，重试也基本幂等（再封一次、已删的不会再命中）。
+ * 但有两类刷新列表根本看不出上次有没有执行，重复提交的代价又很实在：
+ *   - 群发邮件：任务进的是 send_email_mass 队列，用户列表里没有任何痕迹；重发 = 人人两封，
+ *     还可能让 SMTP 账号被判垃圾发送；
+ *   - 批量生成：邮箱是后端随机生成的，重试不会撞唯一约束，而是再多出一整批带套餐的账号。
+ * 所以这两类超时时记一条记录，在有效期内再打开时由弹窗展示上次的情况，
+ * 要求管理员勾选「已核实」才能提交；同一种操作成功一次就清掉。
+ *
+ * 用 localStorage 而不是 sessionStorage：管理员「刷新确认」时很可能新开一个标签页，
+ * sessionStorage 在新标签页里是空的。存储不可用（隐私模式等）时退回内存，至少当前页面内有效。
+ * 这里不存明文密码 —— 批量生成的密码只放内存（见 UserGenerateModal）。
+ */
+export type UnknownOutcomeKind = 'user.sendMail' | 'user.generateBatch'
+
+export interface UnknownOutcomeRecord<T> {
+  /** 超时发生的时间（毫秒时间戳） */
+  at: number
+  detail: T
+}
+
+type UnknownOutcomeStore = Partial<
+  Record<UnknownOutcomeKind, UnknownOutcomeRecord<unknown>>
+>
+
+const UNKNOWN_OUTCOME_KEY = 'v2board_admin_v2_unknown_outcome'
+/**
+ * 有效期。超时本身已经等了 LONG_TIMEOUT（10 分钟），之后后端可能还在跑，
+ * 群发入队后队列还要慢慢发；过了有效期就当管理员早已核实过，不再打扰。
+ */
+const UNKNOWN_OUTCOME_TTL = 30 * 60_000
+
+let memoryOutcomes: UnknownOutcomeStore = {}
+
+function readOutcomes(): UnknownOutcomeStore {
+  try {
+    const raw = localStorage.getItem(UNKNOWN_OUTCOME_KEY)
+    if (!raw) return {}
+    const parsed: unknown = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? (parsed as UnknownOutcomeStore) : {}
+  } catch {
+    // 存储不可用或被手改坏：退回内存
+    return memoryOutcomes
+  }
+}
+
+function writeOutcomes(store: UnknownOutcomeStore): void {
+  memoryOutcomes = store
+  try {
+    if (Object.keys(store).length === 0) localStorage.removeItem(UNKNOWN_OUTCOME_KEY)
+    else localStorage.setItem(UNKNOWN_OUTCOME_KEY, JSON.stringify(store))
+  } catch {
+    // 忽略：只在当前页面内有效
+  }
+}
+
+/** 记下一次「结果未知」。同一种操作只留最近一次。返回记录的 at，调用方可以拿它关联只放内存的信息 */
+export function rememberUnknownOutcome<T>(kind: UnknownOutcomeKind, detail: T): number {
+  const at = Date.now()
+  writeOutcomes({ ...readOutcomes(), [kind]: { at, detail } })
+  return at
+}
+
+/** 有效期内最近一次「结果未知」的记录；没有或已过期返回 null */
+export function recentUnknownOutcome<T>(
+  kind: UnknownOutcomeKind,
+): UnknownOutcomeRecord<T> | null {
+  const record = readOutcomes()[kind]
+  // 存储被手改坏时当作没有记录，别让弹窗渲染时崩掉
+  if (!record || typeof record.at !== 'number' || typeof record.detail !== 'object' || !record.detail) {
+    return null
+  }
+  if (Date.now() - record.at > UNKNOWN_OUTCOME_TTL) {
+    clearUnknownOutcome(kind)
+    return null
+  }
+  return record as UnknownOutcomeRecord<T>
+}
+
+/** 同一种操作成功一次后调用：管理员已经核实过上一次并有意再执行，之后不必再拦 */
+export function clearUnknownOutcome(kind: UnknownOutcomeKind): void {
+  const store = readOutcomes()
+  if (!(kind in store)) return
+  const rest = { ...store }
+  delete rest[kind]
+  writeOutcomes(rest)
 }
 
 /* ------------------------------------------------------------------ *
  * 返回纯文本（非 JSON）的两个接口
  * ------------------------------------------------------------------ */
+
+/**
+ * 纯文本接口专用的 transformResponse：成功时原样返回文本，失败时把 JSON 错误体解析回对象。
+ *
+ * 为什么不能写成 identity `(d) => d`：axios 1.x 在请求失败时**同样**会对
+ * error.response.data 跑 transformResponse（dispatchRequest.js 的 onAdapterRejection），
+ * 再加上 responseType:'text'，错误体就成了一段 JSON 字符串 —— client.ts 拦截器
+ * 取不到 message / errors，只能显示「请求失败 (HTTP 500)」，后端
+ * abort(500, '订阅计划不存在') 这类业务文案全丢，422 的逐字段错误也拿不到。
+ * 也不能干脆删掉 transformResponse：responseType 为 text 时 axios 默认实现同样不解析 JSON。
+ *
+ * 按状态码而不是 content-type 判断：成功的 CSV 是 echo 出来的，content-type 不可靠；
+ * 失败时解析不了（比如反代返回的 HTML 错误页）就保持原样，交给拦截器兜底文案。
+ */
+function textBodyOrParsedError(
+  data: unknown,
+  _headers: unknown,
+  status?: number,
+): unknown {
+  if (typeof data !== 'string') return data
+  if (status === undefined || (status >= 200 && status < 300)) return data
+  try {
+    return JSON.parse(data)
+  } catch {
+    return data
+  }
+}
 
 /**
  * 导出 CSV。
@@ -251,7 +403,12 @@ export async function dumpUsersCSV(
   const response = await http.post<string>(
     `${adminApiBase}${ADMIN_ENDPOINTS.user.dumpCSV.path}`,
     payload,
-    { responseType: 'text', transformResponse: [(d) => d] },
+    {
+      responseType: 'text',
+      transformResponse: [textBodyOrParsedError],
+      // 全量导出要把命中的用户一次查完再拼 CSV，大库会超过默认 30 秒
+      timeout: LONG_TIMEOUT,
+    },
   )
   return response.data
 }
@@ -265,7 +422,11 @@ export interface UserGeneratePayload {
   generate_count?: number
   plan_id?: number | null
   expired_at?: number | null
-  /** 不填则密码默认与邮箱相同 */
+  /**
+   * 后端不填时密码默认**等于邮箱**（UserController.php:231/267），是弱凭证，
+   * 所以 UserGenerateModal 把它设为必填并默认随机生成。
+   * 批量模式下整批账号共用这一个密码（后端只接受一个 password）。
+   */
   password?: string
 }
 
@@ -290,6 +451,10 @@ export async function generateSingleUser(
  *
  * ⚠️ 这是**唯一一次**能拿到明文密码的机会 —— 后端只在这里回显，
  * 之后库里只有 hash。所以必须让用户下载/保存这份 CSV。
+ *
+ * ⚠️ 超时：后端逐个 password_hash（bcrypt，50-250ms/个），500 个要几十秒到两分钟，
+ * 而且先 insert + commit 再 echo CSV。前端按 30 秒断开的话，账号照样入库、CSV 丢失，
+ * 管理员一重试就再生成一整批。所以用 LONG_TIMEOUT。
  */
 export async function generateUsersBatch(
   payload: Omit<UserGeneratePayload, 'email_prefix'> & {
@@ -299,7 +464,11 @@ export async function generateUsersBatch(
   const response = await http.post<string>(
     `${adminApiBase}${ADMIN_ENDPOINTS.user.generate.path}`,
     payload,
-    { responseType: 'text', transformResponse: [(d) => d] },
+    {
+      responseType: 'text',
+      transformResponse: [textBodyOrParsedError],
+      timeout: LONG_TIMEOUT,
+    },
   )
   return response.data
 }

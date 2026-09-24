@@ -1,5 +1,5 @@
 import { adminApiBase } from '@/settings'
-import { http } from './client'
+import { http, LONG_TIMEOUT } from './client'
 import { ADMIN_ENDPOINTS } from './endpoints'
 import { call, callList } from './request'
 import type { DataResponse, PageQuery } from './types'
@@ -8,11 +8,65 @@ import type { DataResponse, PageQuery } from './types'
  * 优惠券
  * ================================================================== */
 
-/** 优惠券类型。白名单来自 CouponGenerate.php 的 in:1,2 */
+/**
+ * 优惠券类型。白名单来自 CouponGenerate.php 的 in:1,2。
+ *
+ * type=2 故意不叫「百分比折扣」：中文里「折扣 90%」很容易被读成九折，
+ * 而后端实际是按 value 减免（见 describeCouponRate），填 90 等于一折。
+ */
 export const COUPON_TYPES = {
   1: '固定金额',
-  2: '百分比折扣',
+  2: '按比例减免',
 } as const
+
+/**
+ * type=2 优惠券 value 的中文含义（「减 x%」换算成「几折」）。
+ *
+ * ⚠️ value 是**减免**比例，不是「打几折」：CouponService::use 算的是
+ * discount_amount = intdiv(total * value, 100)。填 10 是九折，填 90 是一折，填 100 是免费。
+ * 用户「专属折扣」（OrderService::setVipDiscount）也是同样的减免语义。
+ */
+export function describeCouponRate(rate: number): string {
+  if (!Number.isFinite(rate)) return ''
+  // 后端同样把比例夹到 [0,100] 并取整
+  const r = Math.max(0, Math.min(100, Math.round(rate)))
+  if (r >= 100) return '免费'
+  if (r <= 0) return '不打折'
+  const pay = (100 - r) / 10
+  return `${Number.isInteger(pay) ? pay : pay.toFixed(1)} 折`
+}
+
+/**
+ * 把「可能是数组、也可能是 JSON 字符串」的字段统一解析成数组。
+ *
+ * 优惠券的 limit_plan_ids / limit_period、礼品卡的 used_user_ids 在库里都是 varchar，
+ * 模型上挂了 array cast，正常情况下 fetch 返回的就是数组；但下面几种形态都真实存在，都要认：
+ *   - 数组：模型 cast 解码后的正常形态
+ *   - JSON 字符串 "[3,4]"：旧版后端 / 绕过模型读表的 fork
+ *   - 双重编码：UserController::redeemgiftcard 先 json_encode 再赋给带 array cast 的
+ *     used_user_ids，库里被编码了两次，cast 只解一层，fetch 返回的仍是字符串 "[5,8]"
+ *   - 非 JSON 的单值：当成单元素数组，至少不丢
+ *
+ * 解析失败时**绝不能**返回空数组冒充「不限」—— 编辑优惠券时这会把限制静默清掉。
+ */
+export function parseJsonArray(raw: unknown): (string | number)[] {
+  let value: unknown = raw
+  // 最多解两层（覆盖上面的双重编码）
+  for (let i = 0; i < 2 && typeof value === 'string'; i++) {
+    const text = value.trim()
+    if (text === '') return []
+    try {
+      value = JSON.parse(text)
+    } catch {
+      return [text]
+    }
+  }
+  if (Array.isArray(value)) return value as (string | number)[]
+  if (typeof value === 'number' || (typeof value === 'string' && value !== '')) {
+    return [value]
+  }
+  return []
+}
 
 export interface AdminCoupon {
   id: number
@@ -26,13 +80,19 @@ export interface AdminCoupon {
    */
   value: number
   show: number
-  /** null = 不限次数 */
+  /**
+   * **剩余**可用次数，不是总次数：每被用一次 CouponService::use 就把它减 1。
+   * null = 不限次数。
+   */
   limit_use: number | null
   /** null = 每人不限次数 */
   limit_use_with_user: number | null
-  /** JSON 字符串或数组，限定可用套餐 */
-  limit_plan_ids: string | number[] | null
-  /** JSON 字符串或数组，限定可用周期 */
+  /**
+   * 限定可用套餐。模型 cast 成 array，通常是数组，历史数据可能是 JSON 字符串、
+   * 元素也可能是字符串 id，用 parseJsonArray 解析。null / 空 = 不限。
+   */
+  limit_plan_ids: string | (number | string)[] | null
+  /** 限定可用周期（month_price 等），同上。null / 空 = 不限 */
   limit_period: string | string[] | null
   started_at: number
   ended_at: number
@@ -44,6 +104,15 @@ export function fetchCoupons(query: PageQuery) {
   return callList<AdminCoupon>(ADMIN_ENDPOINTS.coupon.fetch, query)
 }
 
+/**
+ * ⚠️ 编辑时「不传」和「传 null」是两回事：
+ * CouponController::generate 编辑分支执行 Coupon::find(id)->update($request->validated())，
+ * Laravel 8 的 validated() 只收请求里**出现过**的键（值为 null 也算出现）。所以
+ *   - 键不出现 → 这一列不动；
+ *   - 键为 null → 这一列被写成 NULL。对 limit_plan_ids / limit_period 来说 NULL 就是「不限」
+ *     （CouponService::check 只在它们为真值时才校验），受限券会变成全站通用券。
+ * 编辑时没改动的 limit_* 字段应当整个省略，不要发 null。
+ */
 export interface CouponSavePayload {
   /** 带 id 是编辑 */
   id?: number
@@ -81,12 +150,16 @@ export async function generateCouponsBatch(
   const response = await http.post<string>(
     `${adminApiBase}${ADMIN_ENDPOINTS.coupon.generate.path}`,
     payload,
-    { responseType: 'text', transformResponse: [(d) => d] },
+    // 券码只在这次响应里回显：超时误报失败会让管理员重复生成一批、而第一批的 CSV 已经丢了
+    { responseType: 'text', transformResponse: [(d) => d], timeout: LONG_TIMEOUT },
   )
   return response.data
 }
 
-/** 切换显示状态（后端是取反，不是设值） */
+/**
+ * 切换显示状态（后端是取反，不是设值：$coupon->show = $coupon->show ? 0 : 1）。
+ * 连点两次等于没改，调用方必须在请求期间锁住开关。
+ */
 export function toggleCouponShow(id: number) {
   return call<boolean>(ADMIN_ENDPOINTS.coupon.show, { id })
 }
@@ -118,7 +191,8 @@ export const GIFTCARD_VALUE_UNIT: Record<number, string> = {
   2: '天',
   3: 'GB',
   4: '不需要填',
-  5: '天',
+  // UserController::redeemgiftcard：type=5 且 value == 0 时把 expired_at 置空，即永久套餐
+  5: '天（0 = 永久）',
 }
 
 export interface AdminGiftcard {
@@ -126,12 +200,17 @@ export interface AdminGiftcard {
   code: string
   name: string
   type: number
+  /** type=5 时 0 表示**永久**套餐（不是「0 天」） */
   value: number | null
   /** type=5 时必填 */
   plan_id: number | null
+  /** **剩余**可兑换次数：每兑换一次后端减 1（redeemgiftcard）。null = 不限 */
   limit_use: number | null
-  /** 已兑换过的用户 id 列表（JSON 字符串） */
-  used_user_ids: string | null
+  /**
+   * 已兑换过的用户 id 列表。模型 cast 成 array 所以可能直接是数组，
+   * 但兑换逻辑会双重编码，fetch 也可能返回 JSON 字符串 —— 用 parseJsonArray 解析。
+   */
+  used_user_ids: string | (number | string)[] | null
   started_at: number
   ended_at: number
   created_at: number
@@ -173,7 +252,8 @@ export async function generateGiftcardsBatch(
   const response = await http.post<string>(
     `${adminApiBase}${ADMIN_ENDPOINTS.giftcard.generate.path}`,
     payload,
-    { responseType: 'text', transformResponse: [(d) => d] },
+    // multiGenerate 每张卡都要按未建索引的 code 查重，卡多时很慢；卡密又只回显这一次
+    { responseType: 'text', transformResponse: [(d) => d], timeout: LONG_TIMEOUT },
   )
   return response.data
 }

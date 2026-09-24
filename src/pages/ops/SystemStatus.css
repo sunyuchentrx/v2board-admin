@@ -1,0 +1,221 @@
+/* 系统状态页面级样式：颜色全部走 --va-* token，暗色模式自动跟随 */
+
+.sys-page-card-sub.ant-typography {
+  font-size: 12px;
+  font-weight: 400;
+}
+.sys-page-nowrap {
+  white-space: nowrap;
+}
+/* 卡片标题带副标题，窄屏换成两行时上下留白 */
+.sys-page-queue.ant-card .ant-card-head {
+  padding-block: 10px;
+}
+
+/* ───────────── 运行状态 ───────────── */
+.sys-page-health {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius-lg);
+  background: var(--va-color-fill-alter);
+}
+.sys-page-health-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 18px;
+}
+/* 图标/数字色 = 语义色与正文色混合：浅色下略加深、暗色下提亮，两种模式都够对比度 */
+.sys-page-health.is-ok .sys-page-health-icon {
+  color: color-mix(in srgb, var(--va-color-success-text) 78%, var(--va-color-text));
+  background: var(--va-color-success-bg);
+}
+.sys-page-health.is-bad .sys-page-health-icon {
+  color: color-mix(in srgb, var(--va-color-error-text) 78%, var(--va-color-text));
+  background: var(--va-color-error-bg);
+}
+.sys-page-health.is-pending .sys-page-health-icon {
+  color: var(--va-color-text-tertiary);
+  background: var(--va-color-fill-secondary);
+}
+/* 故障态只把图标方块和 Tag 标红；块本身不换红底红框，醒目的红色留给下面的 Alert */
+.sys-page-health-main {
+  flex: 1;
+  min-width: 0;
+}
+.sys-page-health-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sys-page-health-title {
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--va-color-text);
+}
+.sys-page-health-detail {
+  font-size: 12.5px;
+  line-height: 20px;
+  color: var(--va-color-text-secondary);
+}
+.sys-page-health-ago {
+  color: var(--va-color-text-tertiary);
+}
+.sys-page-health .ant-tag {
+  margin-inline-end: 0;
+  flex-shrink: 0;
+}
+.sys-page-alert.ant-alert {
+  margin-top: 16px;
+}
+.sys-page-cron.ant-typography code {
+  word-break: break-all;
+}
+
+/* ───────────── 统计卡片 ───────────── */
+.sys-page-stat.ant-card {
+  height: 100%;
+}
+.sys-page-stat-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sys-page-stat-title {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--va-color-text-secondary);
+}
+.sys-page-stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 17px;
+  color: color-mix(in srgb, var(--va-color-primary-text) 72%, var(--va-color-text));
+  background: var(--va-color-primary-bg);
+}
+.sys-page-stat.is-error .sys-page-stat-icon {
+  color: color-mix(in srgb, var(--va-color-error-text) 78%, var(--va-color-text));
+  background: var(--va-color-error-bg);
+}
+.sys-page-stat.is-warning .sys-page-stat-icon {
+  color: color-mix(in srgb, var(--va-color-warning-text) 78%, var(--va-color-text));
+  background: var(--va-color-warning-bg);
+}
+.sys-page-stat-value {
+  margin-top: -4px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 34px;
+  letter-spacing: -0.01em;
+  color: var(--va-color-text);
+}
+.sys-page-stat.is-error .sys-page-stat-value {
+  color: color-mix(in srgb, var(--va-color-error-text) 85%, var(--va-color-text));
+}
+.sys-page-stat.is-warning .sys-page-stat-value {
+  color: color-mix(in srgb, var(--va-color-warning-text) 85%, var(--va-color-text));
+}
+.sys-page-stat-foot {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--va-color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sys-page-stat-skeleton.ant-skeleton.ant-skeleton-element {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.sys-page-stat-skeleton.ant-skeleton-element .ant-skeleton-input {
+  width: 88px;
+  min-width: 88px;
+}
+.sys-page-stat-foot .mono {
+  font-size: 12px;
+  color: var(--va-color-text-secondary);
+}
+
+/* ───────────── 系统日志 ───────────── */
+.sys-page-log .ant-table-tbody > tr > td {
+  font-size: 13px;
+}
+.sys-page-level.ant-tag {
+  font-family: var(--va-font-family-code);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.sys-page-method {
+  font-weight: 600;
+  color: var(--va-color-text-secondary);
+}
+.sys-page-log-detail {
+  padding: 4px 4px 6px;
+  min-width: 0;
+}
+.sys-page-log-meta {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 6px 12px;
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+.sys-page-log-meta dt {
+  color: var(--va-color-text-tertiary);
+}
+.sys-page-log-meta dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sys-page-log-label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--va-color-text-secondary);
+}
+.sys-page-log-data.code-block {
+  max-height: 320px;
+  overflow: auto;
+  background: var(--va-color-bg-container);
+}
+
+/* 手机上日志表横向滚动，展开行的内容钉在可视区里、宽度不超过屏幕，免得详情也要左右拖 */
+@media (max-width: 767px) {
+  .sys-page-log-detail {
+    position: sticky;
+    inset-inline-start: 0;
+    max-width: calc(100vw - 92px);
+  }
+}
+
+@media (max-width: 575px) {
+  .sys-page-stat-value {
+    font-size: 22px;
+    line-height: 30px;
+  }
+  .sys-page-stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+  }
+}

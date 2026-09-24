@@ -1,30 +1,41 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Alert,
+  Button,
   Col,
   DatePicker,
-  Divider,
   Form,
   Input,
   InputNumber,
   Modal,
   Row,
   Select,
-  Switch,
+  Space,
   Spin,
+  Typography,
   message,
+  type InputNumberProps,
 } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 import dayjs, { type Dayjs } from 'dayjs'
 import { ApiError } from '@/api/client'
 import { fetchPlans } from '@/api/plan'
-import { getUserInfoById, updateUser, type AdminUser } from '@/api/user'
+import { describeCouponRate } from '@/api/promo'
+import FormSection from '@/components/FormSection'
+import SettingSwitch from '@/components/SettingSwitch'
+import {
+  getUserInfoById,
+  updateUser,
+  type AdminUser,
+  type UserUpdatePayload,
+} from '@/api/user'
 import {
   bytesToGiB,
   centsToYuan,
   giBToBytes,
   yuanToCents,
 } from '@/lib/format'
+import './UserList.css'
 
 interface FormValues {
   email: string
@@ -57,9 +68,121 @@ interface Props {
   onSaved: () => void
 }
 
+type UserDetail = Awaited<ReturnType<typeof getUserInfoById>>
+
+/**
+ * 详情加载状态。只有 ready 才允许保存：
+ * 邀请人邮箱只能从详情里拿到，详情没到（或失败）时表单里那一栏是空的，
+ * 这时保存会让后端把 invite_user_id 置 null —— 静默解除邀请关系。
+ */
+type DetailState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string }
+  | { status: 'ready' }
+
+/** 后端字段名 → 表单字段名。换算过单位的字段两边名字不同，422 要靠这张表落到输入框上 */
+const FIELD_ERROR_TARGET: Record<string, keyof FormValues> = {
+  email: 'email',
+  password: 'password',
+  transfer_enable: 'transfer_enable_gib',
+  u: 'u_gib',
+  d: 'd_gib',
+  device_limit: 'device_limit',
+  speed_limit: 'speed_limit',
+  expired_at: 'expired_at',
+  banned: 'banned',
+  is_admin: 'is_admin',
+  is_staff: 'is_staff',
+  plan_id: 'plan_id',
+  commission_rate: 'commission_rate',
+  discount: 'discount',
+  commission_type: 'commission_type',
+  balance: 'balance_yuan',
+  commission_balance: 'commission_balance_yuan',
+  remarks: 'remarks',
+}
+
+function toFormValues(u: UserDetail): FormValues {
+  return {
+    email: u.email,
+    password: '',
+    transfer_enable_gib: bytesToGiB(u.transfer_enable),
+    u_gib: bytesToGiB(u.u),
+    d_gib: bytesToGiB(u.d),
+    device_limit: u.device_limit,
+    speed_limit: u.speed_limit,
+    // expired_at: null = 长期有效，0 = 未订阅（两者都不给日期）
+    expired_at: u.expired_at ? dayjs(u.expired_at * 1000) : null,
+    neverExpire: u.expired_at === null,
+    banned: u.banned === 1,
+    is_admin: u.is_admin === 1,
+    is_staff: u.is_staff === 1,
+    plan_id: u.plan_id,
+    commission_rate: u.commission_rate,
+    discount: u.discount,
+    commission_type: u.commission_type ?? 0,
+    balance_yuan: centsToYuan(u.balance),
+    commission_balance_yuan: centsToYuan(u.commission_balance),
+    remarks: u.remarks,
+    // 邀请人已不存在时后端给的是 invite_user: null，所以要用可选链
+    invite_user_email: u.invite_user?.email ?? null,
+  }
+}
+
+/**
+ * 到期时间三态：长期有效(null) / 指定时间(时间戳) / 未设置(0)。
+ * 未选日期且未勾长期有效时传 0 —— 传 null 会变成长期有效。
+ */
+function toExpiredAt(values: FormValues): number | null {
+  if (values.neverExpire) return null
+  if (values.expired_at) return Math.floor(values.expired_at.valueOf() / 1000)
+  return 0
+}
+
+/**
+ * 数值输入 + 单位。antd 5.29 起 InputNumber 的 addonAfter / addonBefore 已废弃，
+ * 改用 Space.Compact + Space.Addon 拼出同样的外观。Form.Item 注入的 value / onChange / id
+ * 原样转给 InputNumber，校验状态走 context，不受外层包装影响。
+ */
+function UnitNumber({
+  unit,
+  unitBefore,
+  ...props
+}: Omit<InputNumberProps<number>, 'addonAfter' | 'addonBefore'> & {
+  unit: ReactNode
+  /** 单位放在输入框前面（货币符号） */
+  unitBefore?: boolean
+}) {
+  const addon = <Space.Addon className="user-page-unit">{unit}</Space.Addon>
+  return (
+    <Space.Compact block>
+      {unitBefore && addon}
+      <InputNumber<number> {...props} style={{ width: '100%' }} />
+      {!unitBefore && addon}
+    </Space.Compact>
+  )
+}
+
+/**
+ * 专属折扣的实时说明（纯展示）。值是**减免**比例，和按比例优惠券同一语义（见 describeCouponRate）：
+ * 10 = 九折、90 = 一折、100 = 免费；后端 setVipDiscount 用 `if ($user->discount)`，所以 0 和留空都是没有折扣。
+ */
+function discountHint(value: number | null | undefined): string {
+  if (value === null || value === undefined || value === 0) return '留空或 0：没有专属折扣'
+  const desc = describeCouponRate(value)
+  return desc === '免费' ? `减免 ${value}%，即免费` : `减免 ${value}%，即 ${desc}`
+}
+
 export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
   const [form] = Form.useForm<FormValues>()
   const [submitting, setSubmitting] = useState(false)
+  const [detailState, setDetailState] = useState<DetailState>({
+    status: 'loading',
+  })
+  const [reloadSeq, setReloadSeq] = useState(0)
+  /** 本次打开拉到的最新详情：既是回填来源，也是判断「改没改」的基准 */
+  const baselineRef = useRef<UserDetail | null>(null)
+  const userId = user?.id
 
   const { data: plans } = useQuery({
     queryKey: ['plans'],
@@ -67,43 +190,60 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
     enabled: open,
   })
 
-  // 邀请人邮箱不在列表响应里（列表只给 invite_user_id），
-  // 得单独取详情才拿得到。getUserInfoById 有邀请人时会附带 invite_user 对象。
-  const { data: detail, isFetching: loadingDetail } = useQuery({
-    queryKey: ['user-detail', user?.id],
-    queryFn: () => getUserInfoById(user!.id),
-    enabled: open && !!user?.id,
-  })
-
+  /**
+   * 表单**只用打开时现拉的 getUserInfoById 回填，而且每次打开只回填一次**。
+   *
+   * 不用列表行 `user` 回填：那是上次刷新列表时的快照，页面开多久它就旧多久；
+   * 期间节点每分钟上报的流量、用户用余额下的单、续费、到账的佣金，都会被旧快照覆盖回去。
+   * 邀请人邮箱也只有详情里有（列表只给 invite_user_id）。
+   *
+   * 不走 react-query：它的缓存（staleTime 30s）会让重新打开时先拿到旧详情，
+   * 后台 refetch 回来还会再 setFieldsValue 一次，把管理员改了一半的字段冲掉。
+   * 这里明确「一次打开 = 一次请求 = 一次回填」，失败了由管理员手动点重试。
+   */
   useEffect(() => {
-    if (!open || !user) return
-    form.setFieldsValue({
-      email: user.email,
-      password: '',
-      transfer_enable_gib: bytesToGiB(user.transfer_enable),
-      u_gib: bytesToGiB(user.u),
-      d_gib: bytesToGiB(user.d),
-      device_limit: user.device_limit,
-      speed_limit: user.speed_limit,
-      // expired_at: null = 长期有效，0 = 未订阅（两者都不给日期）
-      expired_at: user.expired_at ? dayjs(user.expired_at * 1000) : null,
-      neverExpire: user.expired_at === null,
-      banned: user.banned === 1,
-      is_admin: user.is_admin === 1,
-      is_staff: user.is_staff === 1,
-      plan_id: user.plan_id,
-      commission_rate: user.commission_rate,
-      discount: user.discount,
-      commission_type: user.commission_type ?? 0,
-      balance_yuan: centsToYuan(user.balance),
-      commission_balance_yuan: centsToYuan(user.commission_balance),
-      remarks: user.remarks,
-      invite_user_email: detail?.invite_user?.email ?? null,
-    })
-  }, [open, user, detail, form])
+    if (!open || userId === undefined) return
+    let cancelled = false
+    setDetailState({ status: 'loading' })
+    getUserInfoById(userId).then(
+      (detail) => {
+        if (cancelled) return
+        if (!detail) {
+          setDetailState({ status: 'error', message: '后端没有返回该用户的数据' })
+          return
+        }
+        baselineRef.current = detail
+        // 用 setFields + touched:false 而不是 setFieldsValue：rc-field-form 2.x 的
+        // setFieldsValue 会把值有变化的字段标成 touched，回填完就全是「改过」了。
+        form.setFields(
+          Object.entries(toFormValues(detail)).map(([name, value]) => ({
+            name: name as keyof FormValues,
+            value,
+            touched: false,
+          })),
+        )
+        setDetailState({ status: 'ready' })
+      },
+      (error: unknown) => {
+        if (cancelled) return
+        // 拦截器已弹过全局提示；这里把原因留在弹窗里，并禁止保存
+        setDetailState({
+          status: 'error',
+          message: error instanceof Error ? error.message : '未知错误',
+        })
+      },
+    )
+    return () => {
+      cancelled = true
+      baselineRef.current = null
+      // 关闭时复位，保证下次打开的第一帧就是「加载中」，确定按钮不会先闪成可点
+      setDetailState({ status: 'loading' })
+    }
+  }, [open, userId, reloadSeq, form])
 
   async function handleSubmit() {
-    if (!user) return
+    const base = baselineRef.current
+    if (!user || !base || detailState.status !== 'ready') return
     let values: FormValues
     try {
       values = await form.validateFields()
@@ -111,72 +251,95 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
       return // antd 已在表单上标红
     }
 
+    const payload: UserUpdatePayload = {
+      id: user.id,
+      email: values.email,
+      banned: values.banned ? 1 : 0,
+      is_admin: values.is_admin ? 1 : 0,
+      is_staff: values.is_staff ? 1 : 0,
+      // 这两项必须每次都带：后端把缺省解释为清空分组 / 解除邀请关系
+      plan_id: values.plan_id ?? null,
+      invite_user_email: values.invite_user_email || null,
+    }
+    // 空字符串必须不传，否则后端 min:8 会 422
+    if (values.password) payload.password = values.password
+
+    // 其余字段后端「不传就不改」，所以只提交和打开时的最新值不一样的：
+    //   - 避免把打开弹窗之后后端发生的变化（流量上报、余额下单、续费、佣金到账）覆盖回去；
+    //   - 避免流量经 GB 两位小数换算的精度损失（每次最多约 ±5MB，<5MB 的已用量直接归零）。
+    // 除流量外，其余字段的换算都是无损的（分↔元、秒↔dayjs），直接和原始值比较即可。
+
+    /**
+     * 流量字段界面上是四舍五入到 0.01 GB 的值，所以和「回填时显示的值」比。
+     * 例外：原值不足 0.005 GB 时界面本来就显示 0，管理员手动输入 0 / 清空是想清零，
+     * 这时靠 isFieldTouched 区分（回填用 setFields touched:false，只有管理员动过才为真）。
+     */
+    const trafficChanged = (
+      name: 'transfer_enable_gib' | 'u_gib' | 'd_gib',
+      bytes: number,
+    ) => {
+      const shown = values[name]
+      if (shown !== bytesToGiB(bytes)) return true
+      return form.isFieldTouched(name) && !shown && !!bytes
+    }
+    if (trafficChanged('transfer_enable_gib', base.transfer_enable)) {
+      payload.transfer_enable = giBToBytes(values.transfer_enable_gib)
+    }
+    if (trafficChanged('u_gib', base.u)) payload.u = giBToBytes(values.u_gib)
+    if (trafficChanged('d_gib', base.d)) payload.d = giBToBytes(values.d_gib)
+
+    const expiredAt = toExpiredAt(values)
+    if (expiredAt !== base.expired_at) payload.expired_at = expiredAt
+
+    const balance = yuanToCents(values.balance_yuan)
+    if (balance !== base.balance) payload.balance = balance
+    const commissionBalance = yuanToCents(values.commission_balance_yuan)
+    if (commissionBalance !== base.commission_balance) {
+      payload.commission_balance = commissionBalance
+    }
+
+    // 设备数 / 限速在用户购买套餐时也会被后端改写（OrderService），同样只在改过时提交
+    const nullable = <T,>(v: T | null | undefined) => v ?? null
+    if (nullable(values.device_limit) !== nullable(base.device_limit)) {
+      payload.device_limit = nullable(values.device_limit)
+    }
+    if (nullable(values.speed_limit) !== nullable(base.speed_limit)) {
+      payload.speed_limit = nullable(values.speed_limit)
+    }
+    if (nullable(values.commission_rate) !== nullable(base.commission_rate)) {
+      payload.commission_rate = nullable(values.commission_rate)
+    }
+    if (nullable(values.discount) !== nullable(base.discount)) {
+      payload.discount = nullable(values.discount)
+    }
+    if ((values.commission_type ?? 0) !== (base.commission_type ?? 0)) {
+      payload.commission_type = values.commission_type ?? 0
+    }
+    // 空字符串与 null 等价：后端 ConvertEmptyStringsToNull 会把 '' 存成 null
+    if ((values.remarks || null) !== (base.remarks || null)) {
+      payload.remarks = values.remarks || null
+    }
+
     setSubmitting(true)
     try {
-      // 到期时间三态：长期有效(null) / 指定时间(时间戳) / 未设置(0 → 传 null 会变长期有效，
-      // 所以未选日期且未勾长期有效时保持原值语义，传 0)
-      let expiredAt: number | null
-      if (values.neverExpire) {
-        expiredAt = null
-      } else if (values.expired_at) {
-        expiredAt = Math.floor(values.expired_at.valueOf() / 1000)
-      } else {
-        expiredAt = 0
-      }
-
-      await updateUser({
-        id: user.id,
-        email: values.email,
-        // 空字符串必须不传，否则后端 min:8 会 422
-        ...(values.password ? { password: values.password } : {}),
-        transfer_enable: giBToBytes(values.transfer_enable_gib),
-        u: giBToBytes(values.u_gib),
-        d: giBToBytes(values.d_gib),
-        device_limit: values.device_limit ?? null,
-        speed_limit: values.speed_limit ?? null,
-        expired_at: expiredAt,
-        banned: values.banned ? 1 : 0,
-        is_admin: values.is_admin ? 1 : 0,
-        is_staff: values.is_staff ? 1 : 0,
-        plan_id: values.plan_id ?? null,
-        commission_rate: values.commission_rate ?? null,
-        discount: values.discount ?? null,
-        commission_type: values.commission_type ?? 0,
-        balance: yuanToCents(values.balance_yuan),
-        commission_balance: yuanToCents(values.commission_balance_yuan),
-        remarks: values.remarks ?? null,
-        invite_user_email: values.invite_user_email || null,
-      })
+      await updateUser(payload)
       message.success('已保存')
       onSaved()
       onClose()
     } catch (error) {
       if (error instanceof ApiError && error.status === 422) {
-        // 拦截器不弹 422，映射到表单字段。后端字段名与表单名不完全一致，
-        // 换算过的字段（流量/金额）落不到对应输入框，退化成整体提示。
-        const entries = Object.entries(error.fieldErrors ?? {})
-        // 只有名字与表单字段同名的才能落到输入框上；换算过的字段
-        // （transfer_enable→GB、balance→元）后端名与表单名不同，落不上去。
-        const known: (keyof FormValues)[] = [
-          'email',
-          'password',
-          'device_limit',
-          'speed_limit',
-          'plan_id',
-          'commission_rate',
-          'discount',
-          'remarks',
-        ]
-        const fields = entries
-          .filter(([name]) => known.includes(name as keyof FormValues))
-          .map(([name, errors]) => ({
-            name: name as keyof FormValues,
-            errors,
-          }))
-        if (fields.length > 0) {
-          form.setFields(fields)
-        } else {
-          message.error(entries.map(([, v]) => v.join('，')).join('；') || error.message)
+        // updateUser 传了 handle422，拦截器不弹 422，这里必须自己把错误展示出来：
+        // 能对上输入框的标在表单上，对不上的合并成一条提示，不能静默丢掉。
+        const mapped: { name: keyof FormValues; errors: string[] }[] = []
+        const unmapped: string[] = []
+        for (const [name, errors] of Object.entries(error.fieldErrors ?? {})) {
+          const target = FIELD_ERROR_TARGET[name]
+          if (target) mapped.push({ name: target, errors })
+          else unmapped.push(errors.join('，'))
+        }
+        if (mapped.length > 0) form.setFields(mapped)
+        if (unmapped.length > 0 || mapped.length === 0) {
+          message.error(unmapped.join('；') || error.message)
         }
       }
       // 其他错误（含 abort(500,'邮箱已被使用') 这类业务错误）已由拦截器弹出
@@ -186,211 +349,259 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
   }
 
   const neverExpire = Form.useWatch('neverExpire', form)
+  const discount = Form.useWatch('discount', form)
+  const loadingDetail = detailState.status === 'loading'
 
   return (
     <Modal
       open={open}
-      title={user ? `编辑用户 #${user.id}` : '编辑用户'}
+      title={
+        user ? (
+          <span className="user-page-modal-title">
+            <span>编辑用户 #{user.id}</span>
+            <Typography.Text type="secondary" className="user-page-modal-subtitle" ellipsis>
+              {user.email}
+            </Typography.Text>
+          </span>
+        ) : (
+          '编辑用户'
+        )
+      }
       onCancel={onClose}
       onOk={handleSubmit}
+      okText="保存"
+      cancelText="取消"
       confirmLoading={submitting}
-      width={780}
-      destroyOnClose
+      // 详情没成功加载前不许保存（见 DetailState 注释）
+      okButtonProps={{ disabled: detailState.status !== 'ready' }}
+      width={760}
+      destroyOnHidden
       maskClosable={false}
+      styles={{ body: { maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' } }}
     >
-      <Spin spinning={loadingDetail}>
+      {detailState.status === 'error' ? (
         <Alert
-          type="warning"
+          type="error"
           showIcon
-          style={{ marginBottom: 16 }}
-          message="保存会整体覆盖以下所有字段"
-          description="后端的更新接口是整体覆盖语义：不提交套餐会同时清空用户分组，不填邀请人邮箱会解除邀请关系。本表单已把当前完整状态回填，请确认后再保存。"
+          style={{ marginBottom: 20 }}
+          message="用户详情加载失败，暂时不能保存"
+          description={
+            <div className="user-page-alert-body">
+              <p>{detailState.message}</p>
+              <p>
+                为避免用不完整的数据覆盖用户（例如把邀请关系清空），详情加载成功之前不允许保存。
+              </p>
+            </div>
+          }
+          action={
+            <Button size="small" onClick={() => setReloadSeq((n) => n + 1)}>
+              重试
+            </Button>
+          }
         />
+      ) : (
+        <Spin spinning={loadingDetail}>
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 20 }}
+            message="套餐和邀请人每次保存都会按表单当前值提交"
+            description="后端更新接口把缺省的套餐当作清空用户分组、把缺省的邀请人邮箱当作解除邀请关系，所以这两项总是提交。表单已按打开时的最新数据回填；流量、余额、佣金、到期时间等其余字段只在你改动过时才提交，没动过的保持后端当前值不变。"
+          />
 
-        <Form<FormValues> form={form} layout="vertical" preserve={false}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="email"
-                label="邮箱"
-                rules={[
-                  { required: true, message: '请输入邮箱' },
-                  { type: 'email', message: '邮箱格式不正确' },
-                ]}
-              >
-                <Input placeholder="user@example.com" />
+          {/* 加载中禁用整个表单：Spin 只挡鼠标，挡不住键盘 Tab 进输入框 */}
+          <Form<FormValues>
+            form={form}
+            layout="vertical"
+            preserve={false}
+            disabled={loadingDetail}
+          >
+            <FormSection title="账号" first>
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="email"
+                    label="邮箱"
+                    rules={[
+                      { required: true, message: '请输入邮箱' },
+                      { type: 'email', message: '邮箱格式不正确' },
+                    ]}
+                  >
+                    <Input placeholder="user@example.com" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="password"
+                    label="新密码"
+                    tooltip="留空表示不修改密码"
+                    rules={[{ min: 8, message: '密码至少 8 位' }]}
+                  >
+                    <Input.Password placeholder="留空则不修改" autoComplete="new-password" />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item name="remarks" label="备注">
+                <Input.TextArea autoSize={{ minRows: 3, maxRows: 10 }} placeholder="仅管理员可见" />
               </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="password"
-                label="新密码"
-                rules={[{ min: 8, message: '密码至少 8 位' }]}
-                extra="留空表示不修改密码"
-              >
-                <Input.Password placeholder="留空则不改" autoComplete="new-password" />
-              </Form.Item>
-            </Col>
-          </Row>
+            </FormSection>
 
-          <Divider orientation="left" plain>
-            订阅
-          </Divider>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="plan_id" label="套餐">
-                <Select
-                  allowClear
-                  placeholder="无订阅"
-                  options={(plans ?? []).map((p) => ({
-                    value: p.id,
-                    label: p.name,
-                  }))}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
+            <FormSection title="订阅">
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="plan_id"
+                    label="套餐"
+                    tooltip="每次保存都会按当前值提交；清空即取消套餐"
+                  >
+                    <Select
+                      allowClear
+                      placeholder="无订阅"
+                      style={{ width: '100%' }}
+                      options={(plans ?? []).map((p) => ({
+                        value: p.id,
+                        label: p.name,
+                      }))}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item name="expired_at" label="到期时间">
+                    <DatePicker
+                      showTime
+                      style={{ width: '100%' }}
+                      disabled={neverExpire}
+                      placeholder={neverExpire ? '长期有效' : '未订阅'}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <SettingSwitch
                 name="neverExpire"
-                label="长期有效"
-                valuePropName="checked"
-                extra="开启后不再有到期时间"
-              >
-                <Switch />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="expired_at" label="到期时间">
-                <DatePicker
-                  showTime
-                  style={{ width: '100%' }}
-                  disabled={neverExpire}
-                  placeholder={neverExpire ? '长期有效' : '未订阅'}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+                title="长期有效"
+                description="开启后不再有到期时间，上面选的到期时间会被忽略"
+              />
+            </FormSection>
 
-          <Divider orientation="left" plain>
-            流量与限制
-          </Divider>
-          <Row gutter={16}>
-            <Col span={6}>
-              <Form.Item name="transfer_enable_gib" label="总流量 (GB)">
-                <InputNumber min={0} step={1} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="u_gib" label="已用上行 (GB)">
-                <InputNumber min={0} step={0.01} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="d_gib" label="已用下行 (GB)">
-                <InputNumber min={0} step={0.01} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="device_limit" label="设备数限制">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="不限" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={6}>
-              <Form.Item name="speed_limit" label="限速 (Mbps)">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="不限" />
-              </Form.Item>
-            </Col>
-          </Row>
+            <FormSection title="流量与限制">
+              <Row gutter={16}>
+                <Col xs={24} sm={8}>
+                  <Form.Item name="transfer_enable_gib" label="总流量">
+                    <UnitNumber unit="GB" min={0} step={1} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Form.Item name="u_gib" label="已用上行">
+                    <UnitNumber unit="GB" min={0} step={0.01} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Form.Item name="d_gib" label="已用下行">
+                    <UnitNumber unit="GB" min={0} step={0.01} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item name="device_limit" label="设备数限制">
+                    <UnitNumber unit="台" min={0} placeholder="不限" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item name="speed_limit" label="限速">
+                    <UnitNumber unit="Mbps" min={0} placeholder="不限" />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </FormSection>
 
-          <Divider orientation="left" plain>
-            资金与推广
-          </Divider>
-          <Row gutter={16}>
-            <Col span={6}>
-              <Form.Item name="balance_yuan" label="余额 (元)">
-                <InputNumber min={0} step={0.01} precision={2} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="commission_balance_yuan" label="佣金 (元)">
-                <InputNumber min={0} step={0.01} precision={2} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item
-                name="commission_rate"
-                label="返佣比例 (%)"
-                rules={[{ type: 'number', min: 0, max: 100, message: '0-100' }]}
-              >
-                <InputNumber min={0} max={100} style={{ width: '100%' }} placeholder="用全局默认" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item
-                name="discount"
-                label="专属折扣 (%)"
-                rules={[{ type: 'number', min: 0, max: 100, message: '0-100' }]}
-              >
-                <InputNumber min={0} max={100} style={{ width: '100%' }} placeholder="无" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="commission_type" label="返佣模式">
-                <Select
-                  options={[
-                    { value: 0, label: '跟随全局设置' },
-                    { value: 1, label: '循环返佣（每单都返）' },
-                    { value: 2, label: '仅首单返佣' },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="invite_user_email"
-                label="邀请人邮箱"
-                extra="留空则解除邀请关系"
-              >
-                <Input placeholder="无邀请人" allowClear />
-              </Form.Item>
-            </Col>
-          </Row>
+            <FormSection title="资金与推广">
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item name="balance_yuan" label="余额">
+                    <UnitNumber unit="¥" unitBefore min={0} step={0.01} precision={2} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item name="commission_balance_yuan" label="佣金余额">
+                    <UnitNumber unit="¥" unitBefore min={0} step={0.01} precision={2} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              {/* 这一行两项都带 extra，高度一致，不会把下一行挤歪 */}
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="commission_rate"
+                    label="返佣比例"
+                    tooltip="该用户作为邀请人时，被邀请人下单按这个比例给他返佣"
+                    rules={[{ type: 'number', min: 0, max: 100, message: '0-100' }]}
+                    extra="留空或 0：使用全局默认比例"
+                  >
+                    <UnitNumber unit="%" min={0} max={100} placeholder="全局默认" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="discount"
+                    label="专属折扣（减免比例）"
+                    tooltip="填的是减免比例，不是「打几折」：10 = 九折，90 = 一折，100 = 免费。和按比例优惠券同一算法，按套餐原价计算，可与优惠券叠加（合计不超过原价）。"
+                    rules={[{ type: 'number', min: 0, max: 100, message: '0-100' }]}
+                    extra={discountHint(discount)}
+                  >
+                    <UnitNumber unit="%" min={0} max={100} placeholder="无" />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="commission_type"
+                    label="返佣模式"
+                    tooltip="该用户作为邀请人时，被邀请人的哪些订单给他返佣"
+                  >
+                    <Select
+                      style={{ width: '100%' }}
+                      options={[
+                        { value: 0, label: '跟随全局设置' },
+                        { value: 1, label: '循环返佣（每单都返）' },
+                        { value: 2, label: '仅首单返佣' },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item
+                    name="invite_user_email"
+                    label="邀请人邮箱"
+                    tooltip="每次保存都会按当前值提交；留空则解除邀请关系"
+                  >
+                    <Input placeholder="无邀请人" allowClear />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </FormSection>
 
-          <Divider orientation="left" plain>
-            状态
-          </Divider>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item
-                name="banned"
-                label="封禁"
-                valuePropName="checked"
-                extra="封禁会同时踢掉该用户全部登录会话"
-              >
-                <Switch />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="is_admin" label="管理员" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="is_staff" label="员工（客服）" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item name="remarks" label="备注">
-            <Input.TextArea rows={2} placeholder="仅管理员可见" />
-          </Form.Item>
-        </Form>
-      </Spin>
+            <FormSection title="权限与状态">
+              <Row gutter={16}>
+                <Col xs={24} sm={8}>
+                  <SettingSwitch
+                    name="banned"
+                    title="封禁"
+                    description="同时踢掉全部登录会话"
+                  />
+                </Col>
+                <Col xs={24} sm={8}>
+                  <SettingSwitch name="is_admin" title="管理员" description="可登录管理后台" />
+                </Col>
+                <Col xs={24} sm={8}>
+                  <SettingSwitch name="is_staff" title="员工（客服）" description="员工后台：工单、公告等" />
+                </Col>
+              </Row>
+            </FormSection>
+          </Form>
+        </Spin>
+      )}
     </Modal>
   )
 }

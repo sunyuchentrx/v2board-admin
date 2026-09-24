@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -22,7 +23,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     resolve: {
       alias: {
-        '@': new URL('./src', import.meta.url).pathname,
+        // fileURLToPath 而不是 URL.pathname：后者在 Windows / 中文路径下是 /C:/%E9%A1%B9... 形式，解析失败
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
     },
     build: {
@@ -44,7 +46,8 @@ export default defineConfig(({ mode }) => {
             charts: ['recharts'],
           },
           entryFileNames: 'app.js',
-          chunkFileNames: 'chunk-[name].js',
+          // chunk 带 hash：它们只被 app.js 引用，app.js 的 ?v= 刷新不到固定名的 chunk
+          chunkFileNames: 'chunk-[name]-[hash].js',
           assetFileNames: (info) => {
             const name =
               (info as { names?: string[] }).names?.[0] ??
@@ -59,7 +62,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 5173,
-      // 开发期把 /api 代理到你的后端；用 .env.local 的 VITE_API_TARGET 覆盖
+      // 开发期把 /api 代理到你的后端；用 .env.development.local 的 VITE_API_TARGET 覆盖
       proxy: {
         '/api': {
           target: env.VITE_API_TARGET || 'http://127.0.0.1:8080',

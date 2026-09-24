@@ -1,0 +1,36 @@
+.form-section {
+  padding-top: 18px;
+  margin-top: 4px;
+  border-top: 1px solid var(--va-color-border-secondary);
+}
+.form-section.is-first {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+.form-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.form-section-titles {
+  min-width: 0;
+}
+.form-section-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--va-color-text);
+}
+.form-section-desc {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--va-color-text-tertiary);
+}
+.form-section-extra {
+  flex-shrink: 0;
+}

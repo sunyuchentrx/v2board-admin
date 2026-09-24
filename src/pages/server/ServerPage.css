@@ -1,0 +1,231 @@
+/* 节点管理页（/server）页面级样式：类名一律 server-page- 前缀 */
+
+/* ───────────── 列表标题行 ───────────── */
+.server-page-title {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: 10px;
+  row-gap: 2px;
+}
+.server-page-title-sub.ant-typography {
+  font-size: 12px;
+  font-weight: 400;
+}
+.server-page-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 400;
+}
+/* 选择器要写到 .ant-badge.ant-badge-status 这一层，才压得过 antd 自带的 0,3,0 规则 */
+.server-page-summary .ant-badge.ant-badge-status .ant-badge-status-text {
+  font-size: 12px;
+  color: var(--va-color-text-secondary);
+  margin-inline-start: 6px;
+}
+.server-page-summary .ant-badge {
+  cursor: help;
+}
+/* 窄屏（1024 左右）标题 + 汇总 + 按钮放不下时，ProTable 会把齿轮 / 全屏挤到第二行；先把次要说明藏掉 */
+@media (max-width: 1200px) {
+  .server-page-title-sub-collapsible.ant-typography {
+    display: none;
+  }
+}
+
+/* ───────────── 节点列 ───────────── */
+.server-page-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.server-page-node-dot {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 3px;
+  cursor: help;
+}
+/* 状态点：8px 实心 + 同色淡光圈，比 antd 默认 6px 更醒目 */
+.server-page-node-dot .ant-badge .ant-badge-status-dot {
+  width: 8px;
+  height: 8px;
+}
+.server-page-node-dot .ant-badge .ant-badge-status-success {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-color-success) 18%, transparent);
+}
+.server-page-node-dot .ant-badge .ant-badge-status-warning {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-color-warning) 20%, transparent);
+}
+.server-page-node-dot .ant-badge .ant-badge-status-error {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-color-error) 18%, transparent);
+}
+.server-page-node-name.ant-typography {
+  min-width: 0;
+  flex: 0 1 auto;
+  margin: 0;
+}
+.server-page-node .ant-tag {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 18px;
+  padding-inline: 6px;
+}
+.server-page-row-hidden .server-page-node-name.ant-typography {
+  color: var(--va-color-text-tertiary);
+}
+.server-page-hidden-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--va-color-text-tertiary);
+  cursor: help;
+}
+
+.server-page-proto.ant-tag {
+  margin: 0;
+  font-weight: 500;
+}
+.server-page-proto-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.server-page-proto-id.ant-typography {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+/* 协议筛选下拉：色点 + 短名，和列里的标签一致 */
+.server-page-filter-dropdown.ant-dropdown .ant-table-filter-dropdown .ant-dropdown-menu {
+  max-height: 320px;
+}
+.server-page-filter-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 连接地址：主机名可截断，端口永远完整显示；复制按钮贴在单元格右边，整列对齐 */
+.server-page-addr {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.server-page-addr-host.ant-typography {
+  min-width: 0;
+  flex: 0 1 auto;
+  margin: 0;
+}
+.server-page-addr-port {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.server-page-addr-copy.ant-typography {
+  flex-shrink: 0;
+  margin: 0 0 0 auto;
+  padding-inline-start: 8px;
+}
+.server-page-addr-copy.ant-typography .ant-typography-copy {
+  margin-inline-start: 0;
+}
+
+.server-page-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.server-page-tags .ant-tag {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 新增节点下拉：协议名 + 现有数量 */
+.server-page-add-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-width: 190px;
+  white-space: nowrap;
+}
+.server-page-add-count {
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 操作列紧跟右对齐数字列时，拉开一点距离（类名写两次：要压过 antd 按表格尺寸生成的 padding 规则） */
+.ant-table-wrapper .ant-table .ant-table-thead > tr > th.server-page-op-col.server-page-op-col,
+.ant-table-wrapper .ant-table .ant-table-tbody > tr > td.server-page-op-col.server-page-op-col {
+  padding-inline-start: 24px;
+}
+
+/* ───────────── 路由规则 ───────────── */
+/* 匹配规则永远单行：放不下的标签自己缩短成省略号，+N 标签不缩（行高和其它行一致） */
+.server-page-match {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+.server-page-match .ant-tag {
+  margin: 0;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--va-font-family-code);
+  font-size: 12px;
+}
+.server-page-match .ant-tag.server-page-match-more {
+  flex-shrink: 0;
+  font-family: inherit;
+}
+/* 弹窗里的匹配规则多选：和列表一样用等宽字体 */
+.server-page-mono-select .ant-select-selection-item,
+.server-page-mono-select .ant-select-selection-search-input {
+  font-family: var(--va-font-family-code);
+  font-size: 12.5px;
+}
+
+/* ───────────── 编辑弹窗 ───────────── */
+.server-page-modal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.server-page-modal-title .ant-tag {
+  margin: 0;
+  font-weight: 500;
+}
+.server-page-modal-title-id.ant-typography {
+  font-size: 13px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+.server-page-json-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+/* 标签旁问号提示：help 里的 \n 作为换行，避免长句在 250px 宽的气泡里断得很难看 */
+.server-page-help {
+  white-space: pre-line;
+}
+.server-page-json-key {
+  font-family: var(--va-font-family-code);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--va-color-text-tertiary);
+}
+
+.server-page-strong {
+  font-weight: 500;
+}

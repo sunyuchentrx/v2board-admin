@@ -12,15 +12,24 @@ export function adminUrl(endpoint: Endpoint): string {
  * 通用调用：GET 走 query string，POST 走请求体。
  * 后端所有接口都把有效载荷包在 {data: ...} 里，这里统一剥掉一层。
  */
+export interface CallOptions {
+  /** 调用方自己处理 422（逐字段落到表单），拦截器不弹全局提示 */
+  handle422?: boolean
+  /** 覆盖默认超时，长耗时接口用 LONG_TIMEOUT */
+  timeout?: number
+}
+
 export async function call<T>(
   endpoint: Endpoint,
   payload?: Record<string, unknown>,
+  options?: CallOptions,
 ): Promise<T> {
   const url = adminUrl(endpoint)
+  const config = { handle422: options?.handle422, timeout: options?.timeout }
   const response =
     endpoint.method === 'GET'
-      ? await http.get<DataResponse<T>>(url, { params: payload })
-      : await http.post<DataResponse<T>>(url, payload)
+      ? await http.get<DataResponse<T>>(url, { ...config, params: payload })
+      : await http.post<DataResponse<T>>(url, payload, config)
   return response.data.data
 }
 

@@ -1,0 +1,280 @@
+/* 订单管理页面级样式：颜色全部走 --va-* token，暗色模式自动跟随 */
+
+/* ───────────── 列表单元格 ───────────── */
+.order-page-nowrap {
+  white-space: nowrap;
+}
+.order-page-trade-no.ant-typography {
+  white-space: nowrap;
+}
+/* 单元格里的两行内容（主值 + 次要说明），每行各自省略，不把行高撑乱 */
+.order-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.45;
+}
+.order-page-stack > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.order-page-stack.is-end {
+  align-items: flex-end;
+  text-align: right;
+}
+.order-page-sub {
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+}
+.order-page-money {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+/* 空值「—」和 0 元：次要色（quaternary 太淡，像禁用态；0 元是真实数值） */
+.order-page-empty,
+.order-page-zero {
+  color: var(--va-color-text-tertiary);
+}
+/* 输入框前缀之类的装饰图标 */
+.order-page-icon {
+  color: var(--va-color-text-quaternary);
+}
+/* 订单号下面那行「用户 #id」：复制图标跟着 12px 走，和订单号那行的图标左边缘对齐 */
+.order-page-user.ant-typography {
+  white-space: nowrap;
+}
+
+/* 单元格里的状态标签：去掉 antd 默认的右外边距，让同一列左边缘对齐 */
+.order-page-tag.ant-tag {
+  margin: 0;
+  font-size: 12px;
+  line-height: 22px;
+  padding-inline: 8px;
+}
+.order-page-tag.is-help {
+  cursor: help;
+}
+
+/* ───────────── 佣金状态：标签 + 下拉 ───────────── */
+.order-page-commission {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+.order-page-status-trigger {
+  display: inline-flex;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--va-border-radius-sm);
+}
+.order-page-status-trigger:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+.order-page-status-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--va-color-primary) 55%, transparent);
+  outline-offset: 1px;
+}
+/* 可编辑的标签带一圈淡描边（颜色跟随标签文字），和只读标签区分开；悬停时描边加深 */
+.order-page-status-trigger .order-page-tag.ant-tag {
+  display: inline-flex;
+  align-items: center;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 28%, transparent);
+  transition:
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+.order-page-status-trigger:not(:disabled):hover .order-page-tag.ant-tag,
+.order-page-status-trigger.ant-dropdown-open .order-page-tag.ant-tag {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.order-page-caret {
+  margin-inline-start: 5px;
+  font-size: 10px;
+  opacity: 0.85;
+}
+.order-page-commission .ant-btn-link.ant-btn-sm {
+  padding-inline: 6px;
+}
+
+/* 下拉菜单里的选项：色点 + 状态名 + 右侧提示 */
+.order-page-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 168px;
+}
+.order-page-menu-hint {
+  margin-inline-start: auto;
+  padding-inline-start: 16px;
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+}
+.order-page-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--va-color-text-quaternary);
+}
+.order-page-dot.is-warning {
+  background: var(--va-color-warning);
+}
+.order-page-dot.is-processing {
+  background: var(--va-color-primary);
+}
+.order-page-dot.is-success {
+  background: var(--va-color-success);
+}
+.order-page-dot.is-error {
+  background: var(--va-color-error);
+}
+
+/* ───────────── 详情抽屉 ───────────── */
+.order-page-drawer .ant-drawer-content-wrapper {
+  max-width: 100vw;
+}
+.order-page-detail-body {
+  min-height: 240px;
+}
+.order-page-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  background: var(--va-color-fill-alter);
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius-lg);
+}
+/* 摘要块底色和默认色标签的底色都是 fill-alter，「已取消」这类默认色标签在这里会糊成纯文字 */
+.order-page-hero .order-page-tag.ant-tag-default {
+  background: var(--va-color-fill-secondary);
+}
+.order-page-hero-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.order-page-hero-label {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--va-color-text-tertiary);
+}
+.order-page-hero-no.ant-typography {
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-all;
+}
+.order-page-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-size: 13px;
+  color: var(--va-color-text-secondary);
+}
+.order-page-hero-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-inline-start: auto;
+}
+.order-page-hero-value {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--va-color-text);
+}
+
+/* 描述列表：标签固定宽度，两列左边缘对齐 */
+.order-page-desc.ant-descriptions .ant-descriptions-row > td {
+  padding-bottom: 10px;
+}
+.order-page-desc .ant-descriptions-item-label {
+  flex: none;
+  width: 100px;
+  white-space: nowrap;
+  color: var(--va-color-text-secondary);
+}
+.order-page-desc .ant-descriptions-item-content {
+  min-width: 0;
+  color: var(--va-color-text);
+}
+.order-page-desc .ant-descriptions-item-content .ant-tag {
+  margin: 0;
+}
+
+/* 抽屉里的子表格：包一层描边圆角，和上面的描述列表区分开 */
+.order-page-subtable {
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius-lg);
+  overflow: hidden;
+}
+.order-page-subtable .ant-table-wrapper .ant-table-tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+.order-page-subtable-empty {
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--va-color-text-tertiary);
+  background: var(--va-color-fill-alter);
+  border: 1px dashed var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius-lg);
+}
+
+/* ───────────── 确认框 / 手动开单 ───────────── */
+/* 确认框正文第一行的订单号 */
+.order-page-confirm-no {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: var(--va-color-fill-alter);
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius);
+}
+.order-page-confirm-no-label {
+  flex: none;
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+}
+.order-page-confirm-no .ant-typography {
+  min-width: 0;
+  word-break: break-all;
+}
+/* 主题里表单项间距是 18px，比一行校验文字（22px）还矮，报错时文字会贴住下一项的 label。
+   共享层调大 itemMarginBottom 之前，先在本弹窗里给报错文字补一点下边距 */
+.order-page-assign .ant-form-item-with-help .ant-form-item-explain {
+  padding-bottom: 6px;
+}
+/* 报错下面紧跟 extra 说明时，两行之间按正常行距排，不用再补 */
+.order-page-assign .ant-form-item-with-help .ant-form-item-explain:has(+ .ant-form-item-extra) {
+  padding-bottom: 0;
+}
+
+@media (max-width: 575px) {
+  .order-page-hero {
+    padding: 14px 16px;
+  }
+  .order-page-hero-amount {
+    align-items: flex-start;
+    margin-inline-start: 0;
+  }
+}

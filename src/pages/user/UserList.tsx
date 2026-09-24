@@ -3,6 +3,7 @@ import ProTable, { type ActionType } from '@ant-design/pro-table'
 import {
   Button,
   Dropdown,
+  Grid,
   Modal,
   Space,
   Typography,
@@ -15,6 +16,7 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
   MailOutlined,
+  MoreOutlined,
   PlusOutlined,
   ReloadOutlined,
   StopOutlined,
@@ -30,11 +32,22 @@ import {
   type UserFilter,
 } from '@/api/user'
 import { downloadText } from '@/lib/download'
-import { buildUserColumns } from './columns'
+import RowActions from '@/components/RowActions'
+import { USER_COLUMNS_HIDDEN_BY_DEFAULT, buildUserColumns } from './columns'
 import UserFilterBar from './UserFilterBar'
 import UserEditModal from './UserEditModal'
 import UserGenerateModal from './UserGenerateModal'
 import BulkActionModal, { type BulkAction } from './BulkActionModal'
+import './UserList.css'
+
+/** 列显示设置（哪些列隐藏）记在本机，刷新后保留 */
+const COLUMNS_STATE_KEY = 'v2board_admin_v2_user_columns'
+
+/**
+ * 默认显示的列（含操作列）宽度之和。表格用 table-layout: fixed，
+ * 容器更宽时按比例拉伸；在列设置里打开更多列、总宽超过它时自动出现横向滚动。
+ */
+const TABLE_MIN_WIDTH = 1106
 
 export default function UserList() {
   const tableRef = useRef<ActionType>(null)
@@ -44,7 +57,10 @@ export default function UserList() {
   const [bulkAction, setBulkAction] = useState<BulkAction | null>(null)
   const [exporting, setExporting] = useState(false)
 
-  const columns = buildUserColumns()
+  const screens = Grid.useBreakpoint()
+  // 手机上（< md）不固定左侧列，操作按钮只显示图标，否则固定列会占满整屏
+  const wide = screens.md !== false
+  const columns = buildUserColumns({ pin: wide })
 
   const reload = useCallback(() => {
     tableRef.current?.reload()
@@ -113,37 +129,52 @@ export default function UserList() {
           ...columns,
           {
             title: '操作',
+            key: 'option',
             valueType: 'option',
-            width: 168,
+            // 宽屏：文字按钮（不带图标，省下的宽度留给余额 / 佣金列）；手机：只显示图标
+            width: wide ? 170 : 112,
             fixed: 'right',
-            render: (_, row) => [
-              <Button
-                key="edit"
-                type="link"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => setEditing(row)}
-              >
-                编辑
-              </Button>,
-              <Button
-                key="reset"
-                type="link"
-                size="small"
-                icon={<SyncOutlined />}
-                onClick={() => handleResetSecret(row)}
-              >
-                重置订阅
-              </Button>,
-              <Button
-                key="del"
-                type="link"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => handleDelete(row)}
-              />,
-            ],
+            render: (_, row) => (
+              <span className="user-page-actions">
+                <RowActions
+                  inline={2}
+                  actions={[
+                    {
+                      key: 'edit',
+                      label: '编辑',
+                      icon: wide ? undefined : <EditOutlined />,
+                      iconOnly: !wide,
+                      onClick: () => setEditing(row),
+                    },
+                    {
+                      key: 'reset',
+                      label: '重置订阅',
+                      icon: wide ? undefined : <SyncOutlined />,
+                      iconOnly: !wide,
+                      onClick: () => handleResetSecret(row),
+                    },
+                  ]}
+                />
+                {/* 删除单独放进「更多」：RowActions 只多出一个动作时会平铺，危险动作不该直接露在行里 */}
+                <Dropdown
+                  trigger={['click']}
+                  placement="bottomRight"
+                  menu={{
+                    items: [
+                      {
+                        key: 'del',
+                        icon: <DeleteOutlined />,
+                        label: '删除用户',
+                        danger: true,
+                        onClick: () => handleDelete(row),
+                      },
+                    ],
+                  }}
+                >
+                  <Button type="text" size="small" icon={<MoreOutlined />} aria-label="更多操作" />
+                </Dropdown>
+              </span>
+            ),
           },
         ]}
         request={async (params, sort) => {
@@ -170,11 +201,18 @@ export default function UserList() {
         }}
         search={false}
         options={{ density: false, fullScreen: true, setting: true, reload: false }}
-        scroll={{ x: 1700 }}
+        columnsState={{
+          persistenceKey: COLUMNS_STATE_KEY,
+          persistenceType: 'localStorage',
+          defaultValue: Object.fromEntries(
+            USER_COLUMNS_HIDDEN_BY_DEFAULT.map((key) => [key, { show: false }]),
+          ),
+        }}
+        scroll={{ x: TABLE_MIN_WIDTH }}
         dateFormatter="string"
         headerTitle={
-          <Space>
-            <span>用户管理</span>
+          <Space size={10} wrap>
+            <span>全部用户</span>
             <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
               批量操作作用于筛选结果，不是勾选行
             </Typography.Text>

@@ -7,6 +7,8 @@ V2Board 原版的管理后台只以编译产物形式分发（约 11 MB 的 UmiJ
 sourcemap，没有公开的前端源码），无法二次开发。本项目照着后端接口重新实现了一份
 完全开放、可维护的源码。
 
+> 🚧 安全修复 + UI 美化进行中，方案与进度见 [docs/PROGRESS.md](docs/PROGRESS.md)，UI 规范见 [docs/UI-GUIDE.md](docs/UI-GUIDE.md)，本地联调工具见 [dev/README.md](dev/README.md)。
+
 ## 特性
 
 - **Vite + React 18 + TypeScript + Ant Design 5**，源码完整
@@ -28,14 +30,14 @@ sourcemap，没有公开的前端源码），无法二次开发。本项目照�
 npm install
 
 # 开发：连接一个真实后端
-cp .env.development .env.local
-# 编辑 .env.local，填入你的 secure_path 和后端地址
+cp .env.development .env.development.local
+# 编辑 .env.development.local，填入你的 secure_path 和后端地址
 npm run dev
 ```
 
 打开 `http://localhost:5173/{secure_path}/v2/login`。
 
-`.env.local` 需要两个变量：
+`.env.development.local` 需要两个变量（这个文件只在 `vite dev` 时加载，`npm run build` 不读）：
 
 ```
 # 后台的秘密路径（V2Board 后台配置里的 secure_path）

@@ -1,0 +1,334 @@
+/* 主题配置页：主题卡片网格 + 配置抽屉。颜色全部走 --va-* token，暗色自动跟随。 */
+
+/* ───────────── 列表标题行 ───────────── */
+.theme-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.theme-page-head-text {
+  min-width: 0;
+}
+.theme-page-head-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--va-color-text);
+}
+.theme-page-head-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--va-color-text-secondary);
+  background: var(--va-color-fill-secondary);
+}
+.theme-page-head-desc {
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--va-color-text-secondary);
+}
+
+/* ───────────── 顶部说明 ───────────── */
+/* 暗色下 colorLink 由 darkAlgorithm 从主色派生（#463fc6 / hover #2f2b72），在 Alert 底上几乎看不见。
+   共享层修好 colorLink 之前，本页这条唯一的跳转链接先自己提亮。 */
+[data-theme='dark'] .theme-page-alert a {
+  color: color-mix(in srgb, var(--va-color-primary) 50%, var(--va-color-text));
+}
+[data-theme='dark'] .theme-page-alert a:hover {
+  color: color-mix(in srgb, var(--va-color-primary) 28%, var(--va-color-text));
+}
+/* 行内占位（加载中的主题名）：line-height:0 + 居中，不撑高这一行，数据回来时 Alert 不跳 */
+.theme-page-inline-skeleton.ant-skeleton.ant-skeleton-element {
+  vertical-align: middle;
+  line-height: 0;
+}
+.theme-page-inline-skeleton.ant-skeleton.ant-skeleton-element .ant-skeleton-input {
+  width: 64px;
+  min-width: 64px;
+  height: 18px;
+  line-height: 18px;
+  border-radius: 4px;
+}
+
+/* ───────────── 主题卡片 ───────────── */
+.theme-page-card.ant-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.theme-page-card.ant-card:hover {
+  border-color: var(--va-color-border);
+}
+/* 描边用 box-shadow 画：.ant-card-cover 有 margin:-1px，会盖住上半段的 border，描边会断开 */
+.theme-page-card.ant-card.is-active {
+  border-color: transparent;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--va-color-primary) 55%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--va-color-primary) 12%, transparent),
+    var(--app-shadow-card);
+}
+/* 暗色底接近黑色，55% / 12% 的主色叠上去只剩一条暗线：描边换成 primary-border-hover，光圈加浓 */
+[data-theme='dark'] .theme-page-card.ant-card.is-active {
+  box-shadow:
+    0 0 0 1px var(--va-color-primary-border-hover),
+    0 0 0 4px color-mix(in srgb, var(--va-color-primary) 26%, transparent),
+    var(--app-shadow-card);
+}
+/* 「启用中」的 success 底色在暗色下几乎透明，提一档 */
+[data-theme='dark'] .theme-page-card-badge.ant-tag,
+[data-theme='dark'] .theme-page-drawer-title > .ant-tag-success {
+  background: color-mix(in srgb, var(--va-color-success) 18%, transparent);
+}
+.theme-page-card > .ant-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.theme-page-cover {
+  position: relative;
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  background: var(--va-color-fill-alter);
+  border-bottom: 1px solid var(--va-color-border-secondary);
+}
+.theme-page-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.theme-page-cover-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 30px;
+  color: color-mix(in srgb, var(--va-color-primary) 70%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--va-color-primary) 14%, var(--va-color-bg-container)),
+    color-mix(in srgb, var(--va-color-primary) 4%, var(--va-color-bg-container))
+  );
+}
+
+.theme-page-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+/* 名字是卡片的主要标识：空间不够时先压版本号（和抽屉标题同一优先级），名字至少留 3 个字 */
+.theme-page-card-name {
+  flex: 0 1 auto;
+  min-width: 3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--va-color-text);
+}
+.theme-page-card-version.ant-tag {
+  flex-shrink: 0;
+  min-width: 0;
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-inline-end: 0;
+  font-family: var(--va-font-family-code);
+  font-size: 12px;
+  color: var(--va-color-text-secondary);
+  /* 默认的 fillAlter 和卡片底色几乎一样，看不出是个标签；和旁边的计数徽标统一 */
+  background: var(--va-color-fill-secondary);
+}
+.theme-page-card-title > .theme-page-card-version.ant-tag {
+  flex-shrink: 100;
+  min-width: 52px;
+}
+.theme-page-card-badge.ant-tag {
+  flex-shrink: 0;
+  margin-inline: auto 0;
+}
+
+/* 描述固定占两行，同一行的卡片底部按钮对齐 */
+.theme-page-card-desc.ant-typography {
+  margin-bottom: 0;
+  min-height: calc(2em * 1.5715);
+  font-size: 13px;
+  color: var(--va-color-text-secondary);
+}
+.theme-page-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--va-color-border-secondary);
+}
+.theme-page-card-foot-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.theme-page-card-meta {
+  font-size: 12.5px;
+  white-space: nowrap;
+  color: var(--va-color-text-secondary);
+}
+.theme-page-card-dirty.ant-tag {
+  margin-inline-end: 0;
+}
+
+/* ───────────── 加载占位（和真实卡片同结构、同高度） ───────────── */
+.theme-page-card.is-skeleton .theme-page-card-title {
+  height: calc(15px * 1.5);
+}
+.theme-page-card.is-skeleton .theme-page-skeleton-name .ant-skeleton-input {
+  width: 120px;
+  min-width: 120px;
+  height: 18px;
+}
+.theme-page-skeleton-desc.ant-skeleton {
+  display: flex;
+  align-items: center;
+  min-height: calc(2 * 13px * 1.5715);
+}
+.theme-page-card.is-skeleton .theme-page-skeleton-desc .ant-skeleton-paragraph {
+  margin: 0;
+}
+.theme-page-card.is-skeleton .theme-page-skeleton-desc .ant-skeleton-paragraph > li {
+  height: 12px;
+}
+.theme-page-card.is-skeleton .theme-page-skeleton-desc .ant-skeleton-paragraph > li + li {
+  margin-block-start: 10px;
+}
+.theme-page-card.is-skeleton .theme-page-skeleton-meta .ant-skeleton-input {
+  width: 64px;
+  min-width: 64px;
+  height: 14px;
+}
+.theme-page-card.is-skeleton .theme-page-skeleton-btn .ant-skeleton-button {
+  width: 76px;
+}
+
+/* ───────────── 配置抽屉 ───────────── */
+.theme-page-drawer-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.theme-page-drawer-title > .ant-tag {
+  flex-shrink: 0;
+  margin-inline-end: 0;
+}
+/* 空间不够时先压版本号（卡片上还能看到），把位置留给主题名 */
+.theme-page-drawer-title > .theme-page-card-version.ant-tag {
+  flex-shrink: 100;
+  min-width: 52px;
+}
+/* 主题名来自目录名，可能很长：名字本身省略，「」和后面的标签保持在同一行 */
+.theme-page-drawer-name {
+  display: flex;
+  min-width: 0;
+  white-space: nowrap;
+}
+.theme-page-drawer-name-prefix,
+.theme-page-drawer-name-suffix {
+  flex-shrink: 0;
+}
+.theme-page-drawer-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.theme-page-drawer .ant-drawer-header-title {
+  min-width: 0;
+}
+.theme-page-drawer .ant-drawer-title {
+  min-width: 0;
+}
+
+/* 保存中不许关（onClose 里也挡了），X 按钮给出不可点的样子 */
+.theme-page-drawer.is-saving .ant-drawer-close {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* 抽屉顶部的主题描述：和卡片上同一段文字、同一颜色 */
+.theme-page-drawer-desc.ant-typography {
+  margin-bottom: 0;
+  font-size: 13px;
+  color: var(--va-color-text-secondary);
+}
+
+/* footer 左侧「有未保存的修改」：前面一个 warning 色小圆点 */
+.theme-page-drawer-dirty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--va-color-text-secondary);
+}
+.theme-page-drawer-dirty:not(:empty)::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--va-color-warning);
+}
+
+/* 失败提示滚进视野时，别贴着抽屉 header 的分隔线 */
+.theme-page-save-alert {
+  scroll-margin-top: 16px;
+}
+
+/* config.json 没写 label 时显示的字段名：长串没有空格，允许任意处断行，别压到右侧开关下面 */
+.theme-page-field-key {
+  overflow-wrap: anywhere;
+}
+.theme-page-drawer .setting-switch-title {
+  overflow-wrap: anywhere;
+}
+
+/* label 顶对齐：字段名回退用的是等宽小字，按基线对齐会把 label 行撑高 2px，同一行控件又错开 */
+.theme-page-drawer .ant-form-item-label > label {
+  vertical-align: top;
+}
+
+/* 两列布局下 label 单行省略：label 一折行，同一行两个控件的上沿就错开了（悬停 title 看全文）。
+   单列（手机）时不会错位，允许正常折行。 */
+@media (min-width: 768px) {
+  .theme-page-drawer .ant-form-item-label > label {
+    max-width: 100%;
+  }
+  .theme-page-field-label {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

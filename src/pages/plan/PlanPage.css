@@ -1,0 +1,123 @@
+/* 套餐管理页（PlanList / PlanEditModal）的页面级样式，类名统一 plan-page- 前缀 */
+
+/* ───────────── 列表 ───────────── */
+/* 块级 flex：inline-flex 是原子行内盒，外层 .ant-card-head-title 的省略号管不到它，
+   窄屏时说明文字会被硬切掉半个字。这里让说明自己收缩并显示省略号 */
+.plan-page-card-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  max-width: 100%;
+  min-width: 0;
+}
+.plan-page-card-title > span:first-child {
+  flex: none;
+}
+.plan-page-card-hint.ant-typography {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 表格贴着卡片边缘铺满，和 ProTable 的列表页观感一致 */
+.plan-page-card > .ant-card-body {
+  padding: 0;
+}
+.plan-page-table .ant-table-thead > tr:first-child > th:first-child {
+  border-start-start-radius: 0;
+}
+.plan-page-table .ant-table-thead > tr:first-child > th:last-child {
+  border-start-end-radius: 0;
+}
+.plan-page-table .ant-table-thead > tr > th:first-child,
+.plan-page-table .ant-table-tbody > tr > td:first-child {
+  padding-inline-start: 20px;
+}
+.plan-page-table .ant-table-thead > tr > th:last-child,
+.plan-page-table .ant-table-tbody > tr > td:last-child {
+  padding-inline-end: 16px;
+}
+.plan-page-table .ant-table-tbody > tr:last-child > td {
+  border-bottom: none;
+}
+
+/* 分组表头（配额 / 售价）：下划线标明它管的是下面哪几列。
+   标题靠左并 sticky 吸附在左侧固定列的右边（--plan-pin-left 由 PlanList 按固定列宽度给出），
+   横向滚动时只要这一组还有列露在外面，标题就看得见；居中的话经常正好被两侧固定列盖住 */
+.plan-page-table .ant-table-thead > tr > th.plan-page-col-group {
+  padding-block: 8px;
+  color: var(--va-color-text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.plan-page-table .ant-table-thead > tr > th.plan-page-col-group::after {
+  content: '';
+  position: absolute;
+  inset-inline: 14px;
+  bottom: 0;
+  height: 1px;
+  background: var(--va-color-border);
+}
+/* antd 给跨列表头的是 th[colspan]:not([colspan='1']) { text-align: center }，这里要比它多一级 */
+.plan-page-table .ant-table-thead > tr > th.plan-page-col-group[colspan]:not([colspan='1']) {
+  text-align: start;
+}
+.plan-page-col-group-label {
+  display: inline-block;
+  position: sticky;
+  inset-inline-start: var(--plan-pin-left, 16px);
+}
+.plan-page-table .ant-table-thead > tr:nth-child(2) > th {
+  padding-block: 8px 10px;
+}
+
+.plan-page-table .ant-table-cell {
+  white-space: nowrap;
+}
+.plan-page-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.45;
+}
+.plan-page-name-title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.plan-page-name-sub.ant-typography {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* link 按钮自带 6px 左内边距，拉回来让「编辑」和「操作」表头左边缘对齐 */
+.plan-page-table .row-actions {
+  margin-inline-start: -6px;
+}
+
+/* ───────────── 编辑弹窗 ───────────── */
+/* 单位 / 货币符号用弱化色，和输入值拉开：空值时「不限 … Mbps」不会看起来像已经填了值 */
+.plan-page-form .ant-input-number-prefix,
+.plan-page-form .ant-input-number-suffix {
+  color: var(--va-color-text-tertiary);
+}
+.plan-page-form .plan-page-force-alert {
+  margin-bottom: 18px;
+}
+.plan-page-force-list {
+  margin: 4px 0 0;
+  padding-inline-start: 18px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.plan-page-force-final {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}

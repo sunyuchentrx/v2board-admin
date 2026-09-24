@@ -1,0 +1,275 @@
+/*
+ * 优惠券 / 礼品卡两个页面（含弹窗）共用的页面级样式，类名统一 promo- 前缀，避免污染全局。
+ * 颜色一律走 --va-* token，暗色模式自动跟随。
+ */
+
+/* ───────────── 列表 ───────────── */
+
+/* 卡片标题旁的次要说明 */
+.promo-card-title {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: 10px;
+  row-gap: 2px;
+  min-width: 0;
+}
+.promo-card-desc.ant-typography {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* 两行单元格：主信息 + 一行次要说明 */
+.promo-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  line-height: 1.45;
+}
+.promo-cell > * {
+  max-width: 100%;
+}
+.promo-sub {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--va-color-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+td.promo-name-col {
+  font-weight: 500;
+  color: var(--va-color-text);
+}
+/* 名称一行、券码/卡密一行；名称太长时省略（Typography 的 ellipsis 负责悬停显示全名） */
+.promo-name.ant-typography {
+  display: block;
+  max-width: 100%;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+/* 券码 / 卡密：等宽小胶囊 + 复制按钮 */
+.promo-code.ant-typography {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  font-family: var(--va-font-family-code);
+  font-size: 12.5px;
+  line-height: 20px;
+  white-space: nowrap;
+  margin: 0;
+}
+.promo-code-text {
+  padding: 0 6px;
+  border-radius: var(--va-border-radius-sm);
+  background: var(--va-color-fill-alter);
+  border: 1px solid var(--va-color-border-secondary);
+  color: var(--va-color-text);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.promo-code .ant-typography-copy {
+  margin-inline-start: 2px;
+}
+
+/* 面值标签：比默认 Tag 稍大一点，数字等宽 */
+.promo-value-tag.ant-tag {
+  margin: 0;
+  padding-inline: 8px;
+  font-size: 12.5px;
+  line-height: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 键值两行：剩余 50 / 每人 1 */
+.promo-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  row-gap: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.promo-kv-label {
+  color: var(--va-color-text-tertiary);
+  font-size: 12px;
+}
+.promo-kv-value {
+  color: var(--va-color-text);
+}
+.promo-kv-value.is-empty {
+  color: var(--va-color-warning);
+  font-weight: 500;
+}
+
+/* 限定范围：左边小标签，右边 Tag 流（换行时和第一个 Tag 对齐） */
+.promo-scope {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 6px;
+  align-items: start;
+}
+/* 只排一行：套餐名再长也是省略号截断，不折行把行高撑得参差不齐 */
+.promo-scope-tags {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+.promo-scope .ant-tag {
+  margin: 0;
+  font-size: 12px;
+  /* 两行（套餐 + 周期）叠起来也不比其它两行单元格高，整表行高一致 */
+  line-height: 18px;
+  min-width: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.promo-scope-more.ant-tag {
+  flex-shrink: 0;
+  cursor: default;
+  font-variant-numeric: tabular-nums;
+}
+.promo-scope-label {
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--va-color-text-tertiary);
+}
+
+/* 有效期：一行日期区间 + 一行状态 */
+.promo-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--va-color-text);
+}
+.promo-range-arrow {
+  color: var(--va-color-text-quaternary);
+  font-size: 11px;
+}
+.promo-status .ant-badge-status-text {
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+}
+
+/* 已兑换 / 剩余：右对齐的数字列后面紧跟左对齐的有效期，右侧多留一点空，不然两列像粘在一起 */
+.ant-table-wrapper .ant-table-thead > tr > th.promo-usage-col,
+.ant-table-wrapper .ant-table-tbody > tr > td.promo-usage-col {
+  padding-inline-end: 24px;
+}
+.promo-usage {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.promo-usage-used {
+  font-weight: 600;
+  color: var(--va-color-text);
+}
+.promo-usage-sep {
+  white-space: pre;
+  color: var(--va-color-text-quaternary);
+}
+.promo-usage-left {
+  color: var(--va-color-text-secondary);
+}
+.promo-usage-left.is-empty {
+  color: var(--va-color-warning);
+  font-weight: 500;
+}
+
+.promo-time {
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--va-color-text-secondary);
+  white-space: nowrap;
+}
+
+/* ───────────── 弹窗表单 ───────────── */
+
+/* Segmented 用默认尺寸（总高 = controlHeight 34px），和同一行的输入框等高；这里只处理图标对齐 */
+.promo-mode .ant-segmented-item-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* 整行说明：字段下面统一放一条，不用 extra 撑高某一列 */
+.promo-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  /* 无校验错误时往上收 4px，贴近它说明的那一行 */
+  margin: -4px 0 18px;
+  padding: 9px 12px;
+  border-radius: var(--va-border-radius);
+  background: var(--va-color-fill-alter);
+  border: 1px solid var(--va-color-border-secondary);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--va-color-text-secondary);
+}
+.promo-hint-icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--va-color-text-tertiary);
+}
+.promo-hint strong {
+  font-weight: 600;
+  color: var(--va-color-text);
+}
+.promo-hint.is-warning {
+  background: var(--va-color-warning-bg);
+  border-color: var(--va-color-warning-border);
+}
+.promo-hint.is-warning .promo-hint-icon {
+  color: var(--va-color-warning);
+}
+/*
+ * 上一行字段校验失败时，antd 的错误文字正好占在表单项下边距里；负边距会把提示条顶到错误文字上。
+ * 这时改成留出间距（上一行可能是栅格行，也可能是「永久套餐」开关这类单独的表单项）。
+ */
+.promo-form .ant-row:has(.ant-form-item-has-error) + .promo-hint,
+.promo-form .ant-form-item-has-error + .promo-hint {
+  margin-top: 6px;
+}
+
+.promo-form .ant-alert {
+  margin-bottom: 18px;
+}
+
+/* 券码 / 卡密输入框用等宽字体，但保持和其它输入框同样的字号 */
+.promo-form input.ant-input.mono {
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+/* 等宽字体栈里没有中文字体，中文占位符会退回浏览器默认字体、比同一行的占位符大一号；占位符改回正文字体 */
+.promo-form input.ant-input.mono::placeholder {
+  font-family: var(--va-font-family);
+  letter-spacing: 0;
+}
+
+/* 手机上弹窗只有 ~340px 宽，showTime 的两个「日期 时间」放不下会被截掉秒；收紧内边距和字号 */
+@media (max-width: 575px) {
+  .promo-form .ant-picker-range {
+    padding-inline: 8px;
+  }
+  .promo-form .ant-picker-range .ant-picker-input > input {
+    font-size: 12.5px;
+  }
+  .promo-form .ant-picker-range .ant-picker-range-separator {
+    padding: 0 4px;
+  }
+}

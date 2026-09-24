@@ -1,50 +1,142 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import ProTable, { type ActionType } from '@ant-design/pro-table'
-import { Button, Modal, Space, Tag, Tooltip, Typography, message } from 'antd'
-import { DeleteOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { Badge, Button, Grid, Modal, Tag, Tooltip, Typography, message } from 'antd'
+import {
+  ArrowRightOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons'
+import { useQuery } from '@tanstack/react-query'
+import dayjs from 'dayjs'
 import { ADMIN_ENDPOINTS } from '@/api/endpoints'
 import { proTableRequest } from '@/api/request'
+import { fetchPlans } from '@/api/plan'
 import {
   dropGiftcard,
   GIFTCARD_TYPES,
+  parseJsonArray,
   type AdminGiftcard,
 } from '@/api/promo'
 import { formatMoney, formatTime } from '@/lib/format'
+import RowActions from '@/components/RowActions'
 import GiftcardCreateModal from './GiftcardCreateModal'
+import './PromoPages.css'
 
-/** used_user_ids 是 JSON 字符串，取长度当兑换次数 */
-function usedCount(raw: string | null): number {
-  if (!raw) return 0
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed.length : 0
-  } catch {
-    return 0
-  }
+/**
+ * 已兑换人数 = used_user_ids 的长度。
+ * 模型 cast 成 array，fetch 可能直接返回数组；兑换逻辑又会双重编码，也可能是 JSON 字符串。
+ * 以前只认字符串，遇到数组一律算 0，已兑换数永远显示 0。
+ */
+function usedCount(raw: AdminGiftcard['used_user_ids']): number {
+  return parseJsonArray(raw).length
+}
+
+/** 各类型面值标签的颜色（永久套餐卡另用红色）。都用有底色的颜色：default 的底色和行背景几乎一样，标签看不出来 */
+const TYPE_COLOR: Record<number, string> = {
+  1: 'blue',
+  2: 'cyan',
+  3: 'geekblue',
+  4: 'gold',
+  5: 'purple',
 }
 
 /** 各类型 value 的显示口径，取自 GiftcardController::multiGenerate 的 CSV 逻辑 */
-function formatValue(row: AdminGiftcard): string {
+function ValueCell({ row, planName }: { row: AdminGiftcard; planName: (id: number) => string }) {
   const v = row.value ?? 0
+  const typeLabel = GIFTCARD_TYPES[row.type as keyof typeof GIFTCARD_TYPES] ?? String(row.type)
+  let main: ReactNode
+  let sub: ReactNode = typeLabel
   switch (row.type) {
     case 1:
-      return formatMoney(v)
+      main = formatMoney(v)
+      break
     case 2:
-      return `${v} 天`
+      main = `${v} 天`
+      break
     case 3:
-      return `${v} GB`
+      main = `${v} GB`
+      break
     case 4:
-      return '重置流量'
-    case 5:
-      return `${v} 天（套餐 #${row.plan_id ?? '?'}）`
+      main = '重置流量'
+      // 主标签已经说明了类型，下面不再重复「流量重置」
+      sub = '无面值'
+      break
+    case 5: {
+      sub = `${typeLabel} · ${row.plan_id == null ? '套餐 #?' : planName(row.plan_id)}`
+      // UserController::redeemgiftcard：value == 0 时把 expired_at 置空 = 永久套餐
+      // （PHP 里 null == 0 也成立，所以 null 同样按永久算）。后端 CSV 会把它写成「0天」，
+      // 这里必须醒目标出，否则审计时会被当成一张无效卡。
+      if (v === 0) {
+        return (
+          <Tooltip title="兑换后用户获得该套餐的永久订阅（到期时间置空）">
+            <div className="promo-cell">
+              <Tag bordered={false} color="red" className="promo-value-tag">
+                永久
+              </Tag>
+              <span className="promo-sub">{sub}</span>
+            </div>
+          </Tooltip>
+        )
+      }
+      main = `${v} 天`
+      break
+    }
     default:
-      return String(v)
+      main = String(v)
   }
+  return (
+    <div className="promo-cell">
+      <Tag bordered={false} color={TYPE_COLOR[row.type]} className="promo-value-tag">
+        {main}
+      </Tag>
+      <span className="promo-sub">{sub}</span>
+    </div>
+  )
+}
+
+/** 有效期单元格：一行日期区间 + 一行状态（未开始 / 生效中 / 即将到期 / 已过期） */
+function ValidityCell({ start, end }: { start: number; end: number }) {
+  const now = Date.now() / 1000
+  let status: 'success' | 'processing' | 'warning' | 'default' = 'success'
+  let text = '生效中'
+  if (now < start) {
+    status = 'processing'
+    text = '未开始'
+  } else if (now > end) {
+    status = 'default'
+    text = '已过期'
+  } else if (end - now < 7 * 86400) {
+    status = 'warning'
+    text = `${Math.max(1, Math.ceil((end - now) / 86400))} 天后到期`
+  }
+  return (
+    <Tooltip title={`${formatTime(start)} 至 ${formatTime(end)}`}>
+      <div className="promo-cell">
+        <span className="promo-range">
+          {dayjs(start * 1000).format('YYYY-MM-DD')}
+          <ArrowRightOutlined className="promo-range-arrow" />
+          {dayjs(end * 1000).format('YYYY-MM-DD')}
+        </span>
+        <Badge className="promo-status" status={status} text={text} />
+      </div>
+    </Tooltip>
+  )
 }
 
 export default function GiftcardList() {
   const tableRef = useRef<ActionType>(null)
   const [createOpen, setCreateOpen] = useState(false)
+
+  // 只用来把套餐时长卡的 plan_id 显示成套餐名（和生成弹窗共用同一份缓存）；没拉到时退回显示 #id
+  const { data: plans } = useQuery({ queryKey: ['plans'], queryFn: fetchPlans })
+  const planName = (id: number) =>
+    plans?.find((p) => String(p.id) === String(id))?.name ?? `套餐 #${id}`
+
+  // 手机上不固定「操作」列：固定列会占掉 390px 宽表格的一大块可视宽度，把名称和卡密挡住。
+  // useBreakpoint 首次渲染返回 {}，先用 matchMedia 同步判断，免得手机上先固定再松开闪一下
+  const screens = Grid.useBreakpoint()
+  const pinActions = screens.md ?? window.matchMedia('(min-width: 768px)').matches
 
   const reload = () => tableRef.current?.reload()
 
@@ -61,90 +153,107 @@ export default function GiftcardList() {
           ) as Promise<{ data: AdminGiftcard[]; total: number; success: boolean }>
         }
         columns={[
-          { title: 'ID', dataIndex: 'id', width: 64, sorter: true },
-          { title: '名称', dataIndex: 'name', width: 150, ellipsis: true },
           {
-            title: '卡密',
-            dataIndex: 'code',
-            width: 210,
+            title: 'ID',
+            dataIndex: 'id',
+            width: 60,
+            sorter: true,
+            render: (_, row) => <span className="tabular-nums muted">{row.id}</span>,
+          },
+          {
+            // 卡密并进名称下面一行：各列本来就是两行，行高不变，省下一整列给名称，宽屏下不再被截断
+            title: '名称 / 卡密',
+            dataIndex: 'name',
+            className: 'promo-name-col',
             render: (_, row) => (
-              <Typography.Text copyable={{ text: row.code }} code style={{ fontSize: 12 }}>
-                {row.code}
-              </Typography.Text>
+              <div className="promo-cell">
+                {/* 太长才省略，悬停显示全名 */}
+                <Typography.Text className="promo-name" ellipsis={{ tooltip: row.name }}>
+                  {row.name}
+                </Typography.Text>
+                <Typography.Text
+                  className="promo-code"
+                  copyable={{ text: row.code, tooltips: ['复制卡密', '已复制'] }}
+                >
+                  <span className="promo-code-text">{row.code}</span>
+                </Typography.Text>
+              </div>
             ),
           },
           {
-            title: '类型',
+            title: '类型 / 面值',
             dataIndex: 'type',
-            width: 100,
-            render: (_, row) => (
-              <Tag>
-                {GIFTCARD_TYPES[row.type as keyof typeof GIFTCARD_TYPES] ?? row.type}
-              </Tag>
-            ),
+            width: 180,
+            render: (_, row) => <ValueCell row={row} planName={planName} />,
           },
           {
-            title: '面值',
-            width: 170,
-            render: (_, row) => formatValue(row),
-          },
-          {
-            title: '已兑换 / 上限',
+            // limit_use 每兑换一次后端就减 1（redeemgiftcard），是剩余次数，不是上限
+            title: '已兑换 / 剩余',
             width: 120,
+            align: 'right',
+            // 右对齐的数字紧挨着左对齐的有效期，右边多留一点空
+            className: 'promo-usage-col',
             render: (_, row) => {
               const used = usedCount(row.used_user_ids)
-              const limit = row.limit_use
+              const left = row.limit_use
               return (
-                <Tooltip title={limit ? `上限 ${limit} 次` : '不限次数'}>
-                  {used} / {limit ?? '∞'}
+                <Tooltip
+                  title={left == null ? '不限次数' : `已兑换 ${used} 次，还可兑换 ${left} 次`}
+                >
+                  <span className="promo-usage">
+                    <span className="promo-usage-used">{used}</span>
+                    <span className="promo-usage-sep"> / </span>
+                    <span className={`promo-usage-left${left === 0 ? ' is-empty' : ''}`}>
+                      {left ?? '∞'}
+                    </span>
+                  </span>
                 </Tooltip>
               )
             },
           },
           {
             title: '有效期',
-            width: 200,
-            render: (_, row) => (
-              <Space direction="vertical" size={0} style={{ fontSize: 12 }}>
-                <span>{formatTime(row.started_at)}</span>
-                <span>至 {formatTime(row.ended_at)}</span>
-              </Space>
-            ),
+            width: 216,
+            render: (_, row) => <ValidityCell start={row.started_at} end={row.ended_at} />,
           },
           {
             title: '创建时间',
             dataIndex: 'created_at',
-            width: 150,
-            render: (_, row) => formatTime(row.created_at),
+            width: 136,
+            render: (_, row) => <span className="promo-time">{formatTime(row.created_at)}</span>,
           },
           {
             title: '操作',
-            valueType: 'option',
-            width: 80,
-            fixed: 'right',
-            render: (_, row) => [
-              <Button
-                key="del"
-                type="link"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() =>
-                  Modal.confirm({
-                    title: `删除礼品卡「${row.name}」？`,
-                    content:
-                      '已兑换的记录不会回滚，只是这张卡今后不能再兑换。后端没有编辑礼品卡的接口，删了只能重新生成。',
-                    okText: '确认删除',
-                    okButtonProps: { danger: true },
-                    onOk: async () => {
-                      await dropGiftcard(row.id)
-                      message.success('已删除')
-                      reload()
-                    },
-                  })
-                }
-              />,
-            ],
+            key: 'actions',
+            width: 64,
+            fixed: pinActions ? 'right' : undefined,
+            render: (_, row) => (
+              <RowActions
+                actions={[
+                  {
+                    key: 'del',
+                    label: '删除',
+                    icon: <DeleteOutlined />,
+                    danger: true,
+                    // 和优惠券列表一致：只显示红色图标（悬停提示「删除」），整列红字太抢眼
+                    iconOnly: true,
+                    onClick: () =>
+                      Modal.confirm({
+                        title: `删除礼品卡「${row.name}」？`,
+                        content:
+                          '已兑换的记录不会回滚，只是这张卡今后不能再兑换。后端没有编辑礼品卡的接口，删了只能重新生成。',
+                        okText: '确认删除',
+                        okButtonProps: { danger: true },
+                        onOk: async () => {
+                          await dropGiftcard(row.id)
+                          message.success('已删除')
+                          reload()
+                        },
+                      }),
+                  },
+                ]}
+              />
+            ),
           },
         ]}
         pagination={{
@@ -155,14 +264,16 @@ export default function GiftcardList() {
         }}
         search={false}
         options={{ density: false, fullScreen: true, setting: true, reload: false }}
-        scroll={{ x: 1300 }}
+        scroll={{ x: 980 }}
+        // 手机上操作列不固定时 antd 会退回 auto 布局、按内容撑列宽，名称的省略号就失效了
+        tableLayout="fixed"
         headerTitle={
-          <Space>
-            <span>礼品卡</span>
-            <Typography.Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
+          <span className="promo-card-title">
+            <span>全部礼品卡</span>
+            <Typography.Text type="secondary" className="promo-card-desc">
               本 fork 自定义功能，上游 v2board 没有
             </Typography.Text>
-          </Space>
+          </span>
         }
         toolBarRender={() => [
           <Button key="reload" icon={<ReloadOutlined />} onClick={reload}>

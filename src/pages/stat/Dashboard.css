@@ -1,0 +1,542 @@
+/*
+ * 仪表盘页面样式。类名统一 .dash- 前缀，颜色全部走 antd 的 CSS 变量（--va-*），
+ * 暗色模式自动跟随。淡底色用 color-mix 从语义色调出来，而不是写死色值。
+ */
+
+/* ───────────── 顶部工具行 ───────────── */
+.dash-toolbar {
+  min-height: 34px;
+}
+.dash-updated.ant-typography {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.dash-updated .anticon {
+  color: var(--va-color-text-tertiary);
+}
+.dash-updated .dash-updated-failed.ant-typography {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dash-updated .dash-updated-failed .anticon {
+  color: inherit;
+}
+
+/* ───────────── 统计卡片 ───────────── */
+.dash-kpi-col {
+  display: flex;
+}
+.dash-kpi.ant-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.dash-kpi.ant-card .ant-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+}
+.dash-kpi-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dash-kpi-label {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--va-color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-kpi-icon {
+  --dash-tone: var(--va-color-primary);
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  color: var(--dash-ink, var(--dash-tone));
+  background: color-mix(in srgb, var(--dash-tone) 11%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dash-tone) 14%, transparent);
+}
+.dash-kpi-icon.is-warning {
+  --dash-tone: var(--va-color-warning);
+}
+.dash-kpi-icon.is-error {
+  --dash-tone: var(--va-color-error);
+}
+.dash-kpi-value {
+  margin-top: -6px; /* 数字上提，和标题贴近；图标方块高出的部分由标题行吃掉 */
+  height: 34px; /* 金额卡的 ¥ / 小数和计数卡等高，同一行卡片高度一致 */
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 34px;
+  letter-spacing: -0.02em;
+  color: var(--va-color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-kpi-value.is-error {
+  --dash-tone: var(--va-color-error);
+  color: var(--dash-ink, var(--dash-tone));
+}
+.dash-kpi-value.is-warning {
+  --dash-tone: var(--va-color-warning);
+  color: var(--dash-ink, var(--dash-tone));
+}
+.dash-kpi-unit {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1; /* 小字号按基线对齐时不能把 34px 的行盒撑高 */
+  margin-right: 2px;
+  color: var(--va-color-text-secondary);
+}
+.dash-kpi-dec {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--va-color-text-secondary);
+}
+/* 加载失败时的数字位：「—」用次要色，不能像真实的 0 */
+.dash-kpi-na {
+  color: var(--va-color-text-quaternary);
+  font-weight: 500;
+}
+/* 8 张卡来自同一个请求，一起失败时满屏红字太吵：只有图标用错误色，文字用次要色 */
+.dash-kpi-failed {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--va-color-text-secondary);
+}
+.dash-kpi-failed .anticon {
+  font-size: 12px;
+  color: var(--va-color-error);
+}
+.dash-kpi-value .dash-kpi-skeleton.ant-skeleton {
+  display: inline-flex;
+  vertical-align: middle;
+}
+.dash-kpi-value .dash-kpi-skeleton .ant-skeleton-input {
+  width: 108px;
+  min-width: 108px;
+  height: 24px;
+}
+.dash-kpi-foot {
+  margin-top: auto;
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  font-size: 12.5px;
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.dash-kpi-foot .muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dash-kpi-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+}
+.dash-kpi-link .anticon {
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+/* antd 的 colorLinkHover 在浅色下变浅（对白底 ~2.3:1），悬停改为加深 */
+.dash-kpi-link:hover {
+  color: var(--va-color-primary-active);
+}
+.dash-kpi-link:hover .anticon {
+  transform: translateX(2px);
+}
+
+/* 涨跌胶囊 */
+.dash-delta {
+  --dash-tone: var(--va-color-success);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--dash-ink, var(--dash-tone));
+  background: color-mix(in srgb, var(--dash-tone) 12%, transparent);
+}
+.dash-delta .anticon {
+  font-size: 10px;
+}
+.dash-delta.is-down {
+  --dash-tone: var(--va-color-error);
+}
+/* 成本类指标：涨跌不代表好坏，只保留箭头，不染色 */
+.dash-delta.is-neutral {
+  color: var(--va-color-text-secondary);
+  background: var(--va-color-fill-tertiary);
+}
+
+/* ───────────── 卡片标题 ───────────── */
+.dash-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.dash-card-title-icon {
+  display: inline-flex;
+  color: var(--va-color-text-tertiary);
+  font-size: 15px;
+}
+.dash-card-title-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--va-color-text-tertiary);
+}
+
+/* ───────────── 趋势图 ───────────── */
+.dash-trend-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dash-trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 28px;
+  margin-bottom: 12px;
+}
+.dash-trend-key {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 6px;
+  transition: opacity 0.2s;
+}
+.dash-trend-key:focus-visible {
+  outline: 2px solid var(--va-color-primary);
+  outline-offset: 3px;
+}
+.dash-trend-key.is-off {
+  opacity: 0.42;
+}
+.dash-trend-key.is-off .dash-trend-key-value {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.dash-trend-key-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--va-color-text-secondary);
+}
+.dash-trend-key-line {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+}
+.dash-trend-key-value {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+  color: var(--va-color-text);
+}
+.dash-trend-legend-note {
+  margin-left: auto;
+  padding-bottom: 6px;
+  font-size: 12px;
+  color: var(--va-color-text-secondary);
+}
+.dash-trend-plot {
+  height: 300px;
+  margin-inline: -4px;
+}
+/* 有信息量的说明文字用 secondary（tertiary 的 12px 字对白底只有 ~3.4:1）；坐标轴刻度仍是 tertiary */
+.dash .dash-trend-foot.ant-typography,
+.dash .dash-note.ant-typography {
+  font-size: 12px;
+  color: var(--va-color-text-secondary);
+}
+.dash-trend-skeleton.ant-skeleton {
+  padding: 4px 0 8px;
+}
+
+/* 图表 tooltip（背景/描边/阴影由 token 内联给出） */
+.dash-tip {
+  min-width: 200px;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: var(--va-color-text);
+}
+.dash-tip-date {
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.dash-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 22px;
+}
+.dash-tip-key {
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.dash-tip-name {
+  flex: 1;
+  color: var(--va-color-text-secondary);
+}
+.dash-tip-value {
+  margin-left: 16px; /* 系列名是 flex:1，数值右对齐；这里保证名与值之间至少留出一段空白 */
+  font-weight: 600;
+}
+
+/* ───────────── 趋势数据表 ───────────── */
+.dash-trend-table-note.ant-typography {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--va-color-text-secondary);
+}
+/* 列名本身不长，但别让中文括号在窄列里折行把表头撑高 */
+.dash-trend-table .ant-table-thead > tr > th {
+  white-space: nowrap;
+}
+
+/* ───────────── 排行卡片 ───────────── */
+.dash-rank-card.ant-card {
+  height: 100%;
+}
+.dash-rank-card.ant-card .ant-card-body {
+  padding: 8px 12px 12px;
+}
+/*
+ * 仪表盘上的两种表（排行、趋势数据表）表头统一：卡片同色底、小号次要字，不用全局的灰底表头。
+ * 用容器色而不是 transparent：趋势表的日期列是 fixed 的，横向滑动时表头必须不透明。
+ */
+.dash-rank-card .ant-table-wrapper .ant-table-thead > tr > th,
+.dash-trend-table .ant-table-wrapper .ant-table-thead > tr > th {
+  background: var(--va-color-bg-container);
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+  border-bottom-color: var(--va-color-border-secondary);
+}
+.dash-rank-card .ant-table-wrapper .ant-table-tbody > tr > td,
+.dash-trend-table .ant-table-wrapper .ant-table-tbody > tr > td {
+  border-bottom-color: var(--va-color-border-secondary);
+}
+.dash-rank-card .ant-table-wrapper .ant-table-tbody > tr:last-child > td {
+  border-bottom: 0;
+}
+.dash-rank-failed.ant-empty .ant-empty-image {
+  height: auto;
+  margin-bottom: 10px;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--va-color-error);
+  opacity: 0.85;
+}
+.dash-rank-failed.ant-empty .ant-empty-description {
+  color: var(--va-color-text-secondary);
+}
+
+.dash-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--va-color-text-tertiary);
+  background: var(--va-color-fill-tertiary);
+}
+.dash-rank.is-top {
+  --dash-tone: var(--va-color-primary);
+  color: var(--dash-ink, var(--dash-tone));
+  background: color-mix(in srgb, var(--dash-tone) 12%, transparent);
+}
+.dash-rank.is-top-1 {
+  color: var(--va-color-text-light-solid);
+  background: var(--va-color-primary);
+}
+
+.dash-proto.ant-tag {
+  margin: 0;
+  font-size: 12px;
+}
+/* 协议列收起时，协议作为小字跟在节点名后面 */
+.dash-proto-inline {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--va-color-text-secondary);
+}
+/* 表头里带说明的列名（占比） */
+.dash-th-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: help;
+}
+.dash-th-hint .anticon {
+  font-size: 11px;
+}
+.dash-rank-skeleton.ant-skeleton {
+  padding: 8px 4px;
+  text-align: left;
+}
+
+.dash-traffic {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.dash-traffic-bar {
+  flex: 1;
+  min-width: 24px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--va-color-fill-secondary);
+  overflow: hidden;
+}
+.dash-traffic-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--va-color-primary);
+  opacity: 0.85;
+}
+.dash-traffic-value {
+  flex-shrink: 0;
+  text-align: right;
+  font-weight: 500;
+  white-space: nowrap;
+}
+/* 有长度条时数值列留最小宽度，各行的条才能左右对齐；没有条时按内容宽，把宽度让给名称列 */
+.dash-traffic.has-bar .dash-traffic-value {
+  min-width: 84px;
+}
+.dash-traffic-unit {
+  margin-left: 3px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--va-color-text-secondary);
+}
+.dash-share {
+  color: var(--va-color-text-secondary);
+  font-size: 12.5px;
+}
+
+/*
+ * 暗色：主色/成功色直接当文字或图标色画在深色表面上太暗（#4f46e5 对 #15181f 不到 3:1），
+ * 淡底上的「墨色」往正文色方向提亮。data-theme 由 ThemeProvider 写在 <html> 上。
+ */
+html[data-theme='dark'] .dash-kpi-icon,
+html[data-theme='dark'] .dash-delta,
+html[data-theme='dark'] .dash-rank.is-top {
+  --dash-ink: color-mix(in srgb, var(--dash-tone) 62%, var(--va-color-text));
+}
+html[data-theme='dark'] .dash-kpi-value.is-error,
+html[data-theme='dark'] .dash-kpi-value.is-warning {
+  --dash-ink: color-mix(in srgb, var(--dash-tone) 80%, var(--va-color-text));
+}
+html[data-theme='dark'] .dash-kpi-icon,
+html[data-theme='dark'] .dash-rank.is-top:not(.is-top-1) {
+  background: color-mix(in srgb, var(--dash-tone) 20%, transparent);
+}
+/* 暗色的 colorLink（#463fc6）对 #15181f 只有 ~2.4:1，悬停色更暗；同样往正文色提亮 */
+html[data-theme='dark'] .dash-kpi-link {
+  color: color-mix(in srgb, var(--va-color-primary) 55%, var(--va-color-text));
+}
+html[data-theme='dark'] .dash-kpi-link:hover {
+  color: var(--va-color-text);
+}
+/* 流量长度条同理：暗色主色对表面 ~2.2:1、对灰轨道 ~1.5:1，发闷；提亮到和趋势图暗色档（#6366f1）同一明度 */
+html[data-theme='dark'] .dash-traffic-bar > i {
+  background: color-mix(in srgb, var(--va-color-primary) 78%, var(--va-color-text));
+  opacity: 1;
+}
+
+/* ───────────── 响应式 ───────────── */
+@media (max-width: 575px) {
+  .dash-kpi.ant-card .ant-card-body {
+    padding: 14px 16px;
+  }
+  .dash-kpi-value {
+    height: 32px;
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .dash-kpi-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+    border-radius: 9px;
+  }
+  /* 手机上卡片头放不下标题 + 分段开关：开关换到第二行 */
+  .dash-trend-card .ant-card-head-wrapper {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    padding-block: 12px;
+  }
+  .dash-trend-card .ant-card-head-title {
+    flex-basis: 100%;
+  }
+  .dash-trend-card .ant-card-extra {
+    margin-inline-start: 0;
+    flex-basis: 100%; /* 分段开关（block）撑满整行 */
+  }
+  .dash-trend-legend {
+    gap: 8px 20px;
+  }
+  .dash-trend-legend-note {
+    margin-left: 0;
+    flex-basis: 100%;
+    padding-bottom: 0;
+  }
+  .dash-trend-key-value {
+    font-size: 17px;
+    line-height: 24px;
+  }
+  .dash-trend-plot {
+    height: 240px;
+  }
+}

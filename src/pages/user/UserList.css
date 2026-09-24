@@ -1,0 +1,247 @@
+/*
+ * 用户管理页的页面级样式。类名统一 user-page- 前缀，避免污染其他页面。
+ * 颜色一律用 antd 的 CSS 变量（--va-*），暗色模式自动跟随。
+ */
+
+/* ───────────── 列表单元格 ───────────── */
+.user-page-id {
+  color: var(--va-color-text-secondary);
+}
+
+/* 两行单元格：主信息 + 12px 次要信息 */
+.user-page-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.45;
+}
+.user-page-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.user-page-email.ant-typography {
+  min-width: 0;
+  flex: 0 1 auto;
+  margin: 0;
+}
+.user-page-tag.ant-tag {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 11.5px;
+  line-height: 18px;
+  padding-inline: 6px;
+}
+.user-page-sub,
+.user-page-sub.ant-typography {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--va-color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-page-sub.is-success {
+  color: var(--va-color-success);
+}
+.user-page-sub.is-warning {
+  color: var(--va-color-warning);
+}
+.user-page-sub.is-danger {
+  color: var(--va-color-error);
+}
+.user-page-remark.ant-typography {
+  margin: 0;
+  max-width: 100%;
+}
+
+/* 流量：用量文字 + 细进度条 */
+.user-page-traffic {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: default;
+}
+.user-page-traffic-text {
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.user-page-traffic-total {
+  color: var(--va-color-text-tertiary);
+  font-size: 12px;
+}
+.user-page-traffic.is-warning .user-page-traffic-text {
+  color: var(--va-color-warning);
+}
+.user-page-traffic.is-danger .user-page-traffic-text {
+  color: var(--va-color-error);
+}
+.user-page-traffic .ant-progress {
+  margin: 0;
+  line-height: 1;
+}
+.user-page-traffic .ant-progress-outer {
+  display: block;
+}
+.user-page-traffic .ant-progress-inner {
+  background: var(--va-color-fill-secondary);
+}
+
+/* 操作列：RowActions + 「更多」 */
+.user-page-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+/* ───────────── 弹窗 ───────────── */
+.user-page-modal-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  padding-inline-end: 28px; /* 给右上角关闭按钮留位 */
+}
+.user-page-modal-title > span:first-child {
+  flex-shrink: 0;
+}
+.user-page-modal-subtitle.ant-typography {
+  font-size: 13px;
+  font-weight: 400;
+  min-width: 0;
+  margin: 0;
+}
+
+/* 数值输入 + 单位（Space.Compact + Space.Addon，代替已废弃的 addonAfter） */
+.user-page-unit.ant-space-addon {
+  color: var(--va-color-text-secondary);
+  font-size: 13px;
+  min-width: 44px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* 可复制的凭证（初始密码等） */
+.user-page-secret {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius);
+  background: var(--va-color-fill-alter);
+}
+.user-page-secret-label {
+  width: 56px;
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+  flex-shrink: 0;
+}
+.user-page-secret-value.ant-typography {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+  font-family: var(--va-font-family-code);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  word-break: break-all;
+}
+.user-page-secret + .user-page-secret {
+  margin-top: 8px;
+}
+
+/* 生成用户：最终邮箱预览 */
+.user-page-preview {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: -6px 0 18px;
+  padding: 8px 12px;
+  border-radius: var(--va-border-radius);
+  background: var(--va-color-fill-alter);
+  border: 1px dashed var(--va-color-border-secondary);
+  font-size: 13px;
+  color: var(--va-color-text-secondary);
+  min-width: 0;
+}
+.user-page-preview .mono {
+  color: var(--va-color-text);
+  word-break: break-all;
+}
+.user-page-preview-label {
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+  flex-shrink: 0;
+}
+.user-page-password-input input {
+  font-family: var(--va-font-family-code);
+  letter-spacing: 0.02em;
+}
+
+/* 弹窗里多条 Alert 之间的节奏 */
+.user-page-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.user-page-stack:empty {
+  display: none;
+}
+.user-page-alert-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.user-page-alert-body p {
+  margin: 0;
+}
+
+/* 条件标签：key / 比较符 / 值 */
+.user-page-conds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.user-page-conds-label {
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+}
+.user-page-conds .ant-tag {
+  margin: 0;
+}
+
+.user-page-cond.ant-tag {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  margin: 0;
+}
+.user-page-cond .mono {
+  font-size: 12px;
+}
+.user-page-cond-op {
+  opacity: 0.7;
+}
+
+/* 手动输入数量确认 */
+.user-page-confirm-num {
+  display: inline-block;
+  margin-inline: 6px;
+  font-family: var(--va-font-family-code);
+  font-weight: 600;
+  color: var(--va-color-error);
+}
+.user-page-confirm-input.ant-input {
+  font-family: var(--va-font-family-code);
+  letter-spacing: 0.04em;
+}

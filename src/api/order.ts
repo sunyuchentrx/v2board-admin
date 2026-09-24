@@ -46,6 +46,20 @@ export const COMMISSION_STATUS = {
 export const EDITABLE_COMMISSION_STATUS = [0, 1, 3] as const
 
 /**
+ * 只有这些订单状态的佣金才允许在前端手动改：已完成(3) / 已折抵(4)。
+ * 与 CheckCommission::autoCheck 的 whereIn('status', [3, 4]) 保持一致。
+ *
+ * ⚠️ 为什么要前端拦：后端 order/update 不看订单状态，而
+ * CheckCommission::autoPayCommission 每 15 分钟把**所有** commission_status=1
+ * 且有邀请人的订单派佣，同样不看订单状态。setInvite() 在下单时就算好了
+ * commission_balance，所以待支付(0) / 开通中(1) / 已取消(2) 的订单一旦被改成
+ * 「发放中」，就会给没收到的钱真实打款。
+ * 也不能允许把未完成订单改成「无效」：paid()/open() 不会重置 commission_status，
+ * 用户之后付了款，这笔正常佣金就永久作废了。
+ */
+export const COMMISSION_EDITABLE_ORDER_STATUS = [3, 4] as const
+
+/**
  * 订阅周期。取值来自 OrderAssign.php 的白名单，
  * 与 v2_plan 表的价格列一一对应（month_price 等）。
  */
@@ -167,10 +181,16 @@ export interface CommissionLogEntry {
   updated_at: number
 }
 
-export type OrderDetail = AdminOrder & {
+/**
+ * ⚠️ detail **不带 plan_name**：OrderController::detail() 只是 Order::find()
+ * 再挂上 commission_log / surplus_orders，plan_name 是 fetch 里另外拼的。
+ * 这里把它从类型上去掉，免得页面读到一个永远是 undefined 的字段；
+ * 套餐名请用 plan_id 去 fetchPlans() 的结果里查。
+ */
+export type OrderDetail = Omit<AdminOrder, 'plan_name'> & {
   commission_log?: CommissionLogEntry[]
-  /** 本单折抵掉的旧订单 */
-  surplus_orders?: AdminOrder[]
+  /** 本单折抵掉的旧订单（同样是裸 Order 行，没有 plan_name） */
+  surplus_orders?: Omit<AdminOrder, 'plan_name'>[]
 }
 
 /** ⚠️ detail 取的是**主键 id**，不是 trade_no（OrderController::detail()） */
@@ -204,6 +224,11 @@ export function cancelOrder(tradeNo: string) {
  * ⚠️ 尽管 OrderUpdate.php 同时校验了 status 和 commission_status，
  * 控制器里只取 `$request->only(['commission_status'])`
  * —— **订单状态改不了**，只能改佣金状态，且只能改成 0/1/3。
+ *
+ * ⚠️ 后端**不检查订单状态**，调用方必须自己先确认订单在
+ * COMMISSION_EDITABLE_ORDER_STATUS 里（原因见该常量的注释）。
+ * 改成 1（发放中）等于跳过 autoCheck 的 3 天审核期，下一轮 check:commission
+ * （每 15 分钟）就会真实打款，且打款后变成 2，无法再改回。
  */
 export function updateOrderCommissionStatus(
   tradeNo: string,

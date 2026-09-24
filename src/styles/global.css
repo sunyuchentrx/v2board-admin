@@ -1,0 +1,212 @@
+/*
+ * 全局样式：只放 antd token 覆盖不到的东西（字体特性、滚动条、少量组件细节）。
+ * 颜色一律用 antd 的 CSS 变量（--va-*，由 ConfigProvider 的 cssVar 生成），
+ * 这样暗色模式自动跟随。
+ */
+
+:root {
+  --app-sider-width: 232px;
+  --app-sider-collapsed: 72px;
+  --app-content-padding: 24px;
+  --app-shadow-card: 0 1px 2px rgba(15, 18, 25, 0.04), 0 1px 3px rgba(15, 18, 25, 0.03);
+}
+
+html,
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--va-color-bg-layout, #f4f5f8);
+  font-feature-settings: 'cv11', 'ss01';
+}
+
+/* 数字等宽：表格、统计、分页里的数字上下对齐 */
+.ant-table,
+.ant-statistic-content,
+.ant-pagination,
+.ant-input-number-input,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--va-color-primary) 22%, transparent);
+}
+
+/* 细滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--va-color-text) 18%, transparent) transparent;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--va-color-text) 18%, transparent);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ───────────── 卡片 ───────────── */
+.ant-card {
+  box-shadow: var(--app-shadow-card);
+}
+.ant-card .ant-card-head {
+  border-bottom-color: var(--va-color-border-secondary);
+}
+.ant-card-head-title {
+  font-weight: 600;
+}
+
+/* ───────────── ProTable ───────────── */
+.ant-pro-table .ant-pro-card {
+  border-radius: var(--va-border-radius-lg);
+  box-shadow: var(--app-shadow-card);
+  border: 1px solid var(--va-color-border-secondary);
+}
+.ant-pro-table-list-toolbar-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+.ant-pro-table-list-toolbar-container {
+  padding-block: 16px 14px;
+  gap: 12px;
+}
+.ant-pro-table .ant-table-thead > tr > th {
+  font-weight: 600;
+  font-size: 13px;
+}
+.ant-pro-table .ant-pagination {
+  margin-block: 16px 4px !important;
+}
+
+/* 手机上工具栏换行，按钮不溢出卡片 */
+@media (max-width: 767px) {
+  .ant-pro-table-list-toolbar-container {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+  .ant-pro-table-list-toolbar-left,
+  .ant-pro-table-list-toolbar-right {
+    max-width: 100%;
+    justify-content: flex-start !important;
+  }
+  /* toolBarRender 的按钮被 ProTable 包在一个无 class 的 flex div 里，默认不换行 */
+  .ant-pro-table-list-toolbar-right > div:not([class*='setting-items']) {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    min-width: 0;
+  }
+  .ant-pro-table-list-toolbar-title {
+    flex-wrap: wrap;
+  }
+  .ant-pro-table .ant-pro-card .ant-pro-card-body {
+    padding-inline: 12px;
+  }
+  .ant-card .ant-card-body {
+    padding: 16px;
+  }
+  .ant-card .ant-card-head {
+    padding-inline: 16px;
+  }
+}
+
+/* 普通表格同样的表头 */
+.ant-table-wrapper .ant-table-thead > tr > th {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* 表格操作列里的 link 按钮：紧凑、对齐 */
+.ant-table-cell .ant-btn-link.ant-btn-sm,
+.ant-table-cell .ant-btn-text.ant-btn-sm {
+  padding-inline: 6px;
+}
+
+/* ───────────── 表单 ───────────── */
+.ant-form-item-extra {
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.ant-form-item-label > label {
+  font-weight: 500;
+}
+/* 在表单里被当成标签用的 Divider：左对齐小标题 */
+.ant-divider-horizontal.ant-divider-with-text-left.ant-divider-plain {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--va-color-text-secondary);
+  margin-block: 8px 16px;
+}
+
+/* ───────────── 弹窗 / 抽屉 ───────────── */
+.ant-modal .ant-modal-content {
+  padding: 0;
+  overflow: hidden;
+}
+.ant-modal .ant-modal-header {
+  padding: 18px 24px 14px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--va-color-border-secondary);
+}
+.ant-modal .ant-modal-body {
+  padding: 20px 24px 4px;
+}
+.ant-modal .ant-modal-footer {
+  padding: 12px 24px 16px;
+  margin-top: 8px;
+  border-top: 1px solid var(--va-color-border-secondary);
+}
+.ant-modal .ant-modal-close {
+  top: 16px;
+  inset-inline-end: 16px;
+}
+/* Modal.confirm 仍用原来的紧凑结构 */
+.ant-modal.ant-modal-confirm .ant-modal-content {
+  padding: 22px 24px 18px;
+}
+.ant-modal.ant-modal-confirm .ant-modal-body {
+  padding: 0;
+}
+.ant-drawer .ant-drawer-header {
+  border-bottom-color: var(--va-color-border-secondary);
+}
+
+/* ───────────── 标签页 ───────────── */
+.ant-tabs-top > .ant-tabs-nav::before {
+  border-bottom-color: var(--va-color-border-secondary);
+}
+.ant-tabs-tab {
+  font-weight: 500;
+}
+
+/* ───────────── 通用工具类 ───────────── */
+.mono {
+  font-family: var(--va-font-family-code);
+  font-size: 12.5px;
+}
+.muted {
+  color: var(--va-color-text-secondary);
+}
+.code-block {
+  font-family: var(--va-font-family-code);
+  font-size: 12.5px;
+  line-height: 1.6;
+  background: var(--va-color-fill-alter);
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius);
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+}

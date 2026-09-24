@@ -6,12 +6,12 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom'
-import { App as AntdApp, ConfigProvider } from 'antd'
-import zhCN from 'antd/locale/zh_CN'
+import { App as AntdApp } from 'antd'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/auth/AuthContext'
 import { setErrorNotifier } from '@/lib/notify'
 import { uiBasePath } from '@/settings'
+import { ThemeProvider } from '@/theme'
 import AdminLayout from '@/layout/AdminLayout'
 import { NAV_ITEMS } from '@/layout/navigation'
 import Login from '@/pages/Login'
@@ -111,7 +111,7 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ConfigProvider locale={zhCN}>
+    <ThemeProvider>
       <AntdApp>
         <NotifierBridge />
         <QueryClientProvider client={queryClient}>
@@ -120,12 +120,13 @@ export default function App() {
             新后台挂在旧后台旁边，两者互不影响（计划里的「新旧并存」红线）。
           */}
           <BrowserRouter basename={uiBasePath}>
+            {/* AuthProvider 必须在 QueryClientProvider 里面：退出登录时要清空 queryClient 缓存 */}
             <AuthProvider>
               <AppRoutes />
             </AuthProvider>
           </BrowserRouter>
         </QueryClientProvider>
       </AntdApp>
-    </ConfigProvider>
+    </ThemeProvider>
   )
 }

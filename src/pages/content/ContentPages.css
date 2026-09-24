@@ -1,0 +1,115 @@
+/*
+ * 公告管理 / 知识库 两个页面共用的页面级样式（类名统一 content- 前缀，避免污染全局）。
+ * 颜色一律走 --va-* token，暗色模式自动跟随。
+ */
+
+/* 卡片标题旁的次要说明 */
+.content-card-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.content-card-desc.ant-typography {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* 标题列：主标题 + 一行正文摘要 */
+.content-title-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.content-title-cell-main,
+.content-title-cell-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.content-title-cell-main {
+  font-weight: 500;
+  color: var(--va-color-text);
+}
+.content-title-cell-sub {
+  font-size: 12px;
+  line-height: 1.5;
+  /* 12px 小字用 secondary（tertiary 在白底上对比度只有约 3.2:1） */
+  color: var(--va-color-text-secondary);
+}
+
+/* 标签列：统一间距，换行时行距一致 */
+.content-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.content-tags .ant-tag {
+  margin: 0;
+  /* 默认的 fill-alter 底色和行 hover 底色几乎一样，鼠标移上去胶囊就没了；fill-secondary 在两种模式下都看得出 */
+  background: var(--va-color-fill-secondary);
+}
+
+/* 配图链接：图标与文字对齐 */
+.content-img-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* 知识库排序：上移/下移两个按钮收在一个小胶囊里 */
+.content-sort {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px;
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius);
+  background: var(--va-color-fill-alter);
+}
+.content-sort .ant-btn.ant-btn-sm {
+  width: 26px;
+  border-radius: var(--va-border-radius-sm);
+}
+.content-sort-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--va-color-border-secondary);
+}
+
+/* 正文编辑器：运营写的是正文不是代码，用正文字体、与其他输入框同为 14px；行高放宽，长文不挤 */
+.content-editor.ant-input,
+.content-editor textarea.ant-input {
+  font-size: 14px;
+  line-height: 1.7;
+  padding-block: 10px;
+}
+
+/* 弹窗标题里的 #ID */
+.content-modal-id.ant-typography {
+  font-weight: 400;
+  margin-inline-start: 6px;
+}
+
+@media (max-width: 575px) {
+  /* 手机上卡片头只放标题和按钮，说明文字让位 */
+  .content-card-desc.ant-typography {
+    display: none;
+  }
+}
+
+/* 时间等不应折行的列 */
+.content-nowrap {
+  white-space: nowrap;
+}
+
+/*
+ * 有值的次要列（ID、更新时间）：用 text-secondary（白底约 7:1）。
+ * Typography 的 type="secondary" 实际是 text-description（约 3.4:1），比标题下的摘要还淡，层级反了；
+ * 它只留给空值占位「—」。
+ */
+.content-muted {
+  color: var(--va-color-text-secondary);
+}

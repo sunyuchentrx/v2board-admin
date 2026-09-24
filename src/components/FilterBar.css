@@ -1,0 +1,100 @@
+.filter-bar {
+  background: var(--va-color-bg-container);
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius-lg);
+  box-shadow: var(--app-shadow-card);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.filter-bar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.filter-bar-builder.ant-space-compact {
+  flex: 1 1 520px;
+  max-width: 720px;
+  min-width: 0;
+}
+.filter-bar-key.ant-select {
+  width: 150px;
+  flex-shrink: 0;
+}
+.filter-bar-cond.ant-select {
+  width: 84px;
+  flex-shrink: 0;
+}
+.filter-bar-value.ant-select,
+.filter-bar-value.ant-input-number,
+.filter-bar-value.ant-input-affix-wrapper,
+.filter-bar-value.ant-input {
+  flex: 1 1 auto;
+  min-width: 120px;
+  width: auto;
+}
+.filter-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.filter-bar-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--va-color-border-secondary);
+}
+.filter-bar-tags-label {
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+  margin-inline-end: 4px;
+}
+.filter-bar-tag.ant-tag {
+  margin: 0;
+  padding: 2px 8px;
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.filter-bar-tag-cond {
+  opacity: 0.65;
+}
+.filter-bar-tag-val {
+  font-weight: 600;
+}
+.filter-bar-hint.ant-typography {
+  font-size: 12px;
+  margin-inline-start: auto;
+}
+@media (max-width: 640px) {
+  /* 手机上拆成两行网格：字段+比较符 / 值+添加。Compact 的拼接圆角在换行后会错乱，这里统一还原 */
+  .filter-bar-builder.ant-space-compact {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 96px;
+    gap: 8px;
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .filter-bar-builder.ant-space-compact > * {
+    width: 100% !important;
+    min-width: 0;
+    margin: 0 !important;
+    border-radius: var(--va-border-radius) !important;
+  }
+  .filter-bar-builder.ant-space-compact .ant-select-selector {
+    border-radius: var(--va-border-radius) !important;
+  }
+  .filter-bar-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .filter-bar-hint.ant-typography {
+    display: none;
+  }
+}

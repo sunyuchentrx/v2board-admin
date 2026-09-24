@@ -1,0 +1,229 @@
+.app-shell {
+  min-height: 100vh;
+}
+
+/* ───────────── 侧边栏 ───────────── */
+.app-sider {
+  position: sticky !important;
+  top: 0;
+  height: 100vh;
+  z-index: 20;
+}
+.app-sider-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.app-sider-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-block: 4px 12px;
+}
+.app-menu.ant-menu {
+  background: transparent !important;
+  border-inline-end: none !important;
+}
+.app-menu .ant-menu-item-group-title {
+  padding: 16px 22px 6px !important;
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+.app-menu.ant-menu-inline-collapsed .ant-menu-item-group-title {
+  padding: 8px 0 0 !important;
+  height: 1px;
+  overflow: hidden;
+}
+.app-menu .ant-menu-item {
+  font-weight: 500;
+}
+.app-menu.ant-menu-dark .ant-menu-item-selected {
+  box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--va-color-primary) 70%, transparent);
+}
+.app-menu.ant-menu-light .ant-menu-item-selected {
+  font-weight: 600;
+}
+
+.app-brand {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.app-brand.is-collapsed {
+  justify-content: center;
+  padding: 0;
+}
+.app-brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  background: linear-gradient(
+    135deg,
+    var(--va-color-primary) 0%,
+    color-mix(in srgb, var(--va-color-primary) 55%, #22d3ee) 100%
+  );
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--va-color-primary) 80%, transparent);
+}
+.app-brand-logo {
+  height: 32px;
+  max-width: 120px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.app-brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+.app-brand-title {
+  font-weight: 650;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--va-color-text);
+}
+.app-brand-sub {
+  font-size: 11.5px;
+  color: var(--va-color-text-tertiary);
+}
+.app-brand.is-dark .app-brand-title {
+  color: #f3f4f8;
+}
+.app-brand.is-dark .app-brand-sub {
+  color: rgba(226, 230, 240, 0.45);
+}
+
+.app-sider-footer {
+  flex-shrink: 0;
+  padding: 12px 22px 16px;
+  font-size: 12px;
+  color: var(--va-color-text-tertiary);
+  border-top: 1px solid var(--va-color-border-secondary);
+}
+.app-sider-footer.is-dark {
+  color: rgba(226, 230, 240, 0.38);
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ───────────── 顶栏 ───────────── */
+.app-main {
+  min-width: 0;
+}
+.app-header.ant-layout-header {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  line-height: normal;
+  background: color-mix(in srgb, var(--va-color-bg-layout) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--va-color-border-secondary);
+}
+.app-header-left,
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.app-header-icon.ant-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  color: var(--va-color-text-secondary);
+}
+.app-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.app-breadcrumb-group {
+  color: var(--va-color-text-tertiary);
+}
+.app-breadcrumb-sep {
+  color: var(--va-color-text-quaternary);
+}
+.app-breadcrumb-page {
+  color: var(--va-color-text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px 0 4px;
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: 999px;
+  background: var(--va-color-bg-container);
+  cursor: pointer;
+  font: inherit;
+  color: var(--va-color-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.app-user:hover {
+  border-color: var(--va-color-border);
+  box-shadow: 0 1px 3px rgba(15, 18, 25, 0.06);
+}
+.app-user-avatar.ant-avatar {
+  background: color-mix(in srgb, var(--va-color-primary) 14%, transparent);
+  color: var(--va-color-primary);
+}
+.app-user-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ───────────── 内容区 ───────────── */
+.app-content {
+  padding: 22px var(--app-content-padding) 32px;
+  min-width: 0;
+}
+.app-page-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 18px;
+}
+.app-page-title.ant-typography {
+  margin: 0 !important;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.app-page-desc.ant-typography {
+  font-size: 13.5px;
+}
+
+@media (max-width: 991px) {
+  :root {
+    --app-content-padding: 16px;
+  }
+  .app-header.ant-layout-header {
+    padding-inline: 12px;
+  }
+}

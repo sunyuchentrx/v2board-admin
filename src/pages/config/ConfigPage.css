@@ -1,0 +1,326 @@
+/*
+ * 系统配置页。只用 --va-* 变量，暗色模式自动跟随。
+ * 选择器都以 .config-page 开头：既不污染别的页面，也稳稳压过 antd 同级选择器。
+ */
+
+/* ───────────── 分组导航：Tabs 改成设置页式的菜单 ───────────── */
+.config-page .config-page-tabs .ant-tabs-ink-bar {
+  display: none;
+}
+.config-page .config-page-tabs > .ant-tabs-nav {
+  background: var(--va-color-bg-container);
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius-lg);
+  box-shadow: var(--app-shadow-card);
+}
+.config-page .config-page-tabs > .ant-tabs-nav .ant-tabs-tab {
+  border-radius: var(--va-border-radius);
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+.config-page .config-page-tabs > .ant-tabs-nav .ant-tabs-tab .ant-tabs-tab-btn {
+  width: 100%;
+  color: var(--va-color-text-secondary);
+}
+.config-page .config-page-tabs > .ant-tabs-nav .ant-tabs-tab:hover {
+  background: var(--va-color-fill-tertiary);
+}
+.config-page .config-page-tabs > .ant-tabs-nav .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: var(--va-color-text);
+}
+.config-page .config-page-tabs > .ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active {
+  background: color-mix(in srgb, var(--va-color-primary) 10%, transparent);
+}
+.config-page .config-page-tabs > .ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--va-color-primary);
+  font-weight: 600;
+}
+
+/* 宽屏：左侧竖排，滚动时吸顶（顶栏 60px + 16px） */
+.config-page .config-page-tabs.ant-tabs-left > .ant-tabs-nav {
+  position: sticky;
+  top: 76px;
+  align-self: flex-start;
+  width: 208px;
+  flex-shrink: 0;
+  margin-inline-end: 16px;
+  padding: 8px;
+}
+.config-page .config-page-tabs.ant-tabs-left > .ant-tabs-nav .ant-tabs-tab {
+  margin: 0;
+  padding: 8px 10px;
+  text-align: start;
+}
+.config-page .config-page-tabs.ant-tabs-left > .ant-tabs-nav .ant-tabs-tab + .ant-tabs-tab {
+  margin-top: 2px;
+}
+.config-page .config-page-tabs.ant-tabs-left > .ant-tabs-content-holder {
+  display: flex;
+  flex-direction: column;
+  margin-inline-start: 0;
+  border-inline-start: none;
+  min-width: 0;
+}
+.config-page .config-page-tabs.ant-tabs-left > .ant-tabs-content-holder > .ant-tabs-content {
+  flex: 1;
+}
+.config-page .config-page-tabs.ant-tabs-left > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
+  padding-inline-start: 0;
+}
+/* 字段少的分组卡片拉到和左侧导航一样高，底栏紧跟在两列下面，不留一截空白 */
+.config-page .config-page-tabs.ant-tabs-left > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane-active,
+.config-page .config-page-tabs.ant-tabs-left .ant-tabs-tabpane-active > .config-page-group {
+  height: 100%;
+}
+
+/* 窄屏：顶部横排胶囊，放不下时 antd 自己收进「…」 */
+.config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav {
+  margin-bottom: 16px;
+  padding: 6px;
+}
+.config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav::before {
+  display: none;
+}
+.config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab {
+  padding: 6px 12px;
+}
+.config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab + .ant-tabs-tab {
+  margin-inline-start: 4px;
+}
+
+.config-page-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+.config-page-tab-icon {
+  display: inline-flex;
+  font-size: 15px;
+}
+.config-page-tab-icon .anticon {
+  margin: 0;
+}
+.config-page-tab-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.config-page .config-page-tabs.ant-tabs-top .config-page-tab {
+  gap: 6px;
+}
+
+/* 未保存修改的小圆点（导航与底栏共用） */
+.config-page-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--va-color-warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-color-warning) 18%, transparent);
+}
+.config-page-dot.is-error {
+  background: var(--va-color-error);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--va-color-error) 18%, transparent);
+}
+
+.config-page-confirm .ant-alert {
+  padding: 8px 12px;
+}
+
+/* ───────────── 分组卡片 ───────────── */
+.config-page-group .ant-card-head {
+  padding-block: 14px;
+}
+.config-page-group .ant-card-head-title {
+  white-space: normal;
+  overflow: visible;
+}
+.config-page-group .ant-card-extra {
+  margin-inline-start: 12px;
+}
+.config-page-group .ant-card-body {
+  padding-bottom: 4px;
+}
+.config-page-group-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.config-page-group-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 17px;
+  color: var(--va-color-primary);
+  background: color-mix(in srgb, var(--va-color-primary) 10%, transparent);
+}
+.config-page-group-titles {
+  min-width: 0;
+}
+.config-page-group-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--va-color-text);
+}
+.config-page-group-desc {
+  margin-top: 1px;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--va-color-text-tertiary);
+}
+
+/* label 旁的小标记：不改变 label 高度 */
+.config-page-label {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.config-page-flag.ant-tag {
+  margin: 0;
+  padding-inline: 6px;
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+/* 出错时 antd 把 Form.Item 的下边距收成 0（留给错误提示），带 extra 的字段会和下一行贴在一起 */
+.config-page .ant-form-item-with-help .ant-form-item-extra {
+  margin-bottom: 14px;
+}
+
+.config-page-alert-text {
+  margin-bottom: 8px;
+}
+
+/* ───────────── 底部保存栏：吸底，和右侧内容列对齐 ───────────── */
+.config-page-savebar {
+  position: sticky;
+  bottom: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 10px 12px 10px 18px;
+  background: color-mix(in srgb, var(--va-color-bg-container) 86%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  backdrop-filter: saturate(180%) blur(12px);
+  border: 1px solid var(--va-color-border-secondary);
+  border-radius: var(--va-border-radius-lg);
+  box-shadow: var(--va-box-shadow-secondary);
+}
+.config-page-savebar.is-offset {
+  margin-inline-start: 224px;
+}
+/* 992–1199：有侧边栏又有分组导航，内容列最窄，导航收窄一点 */
+@media (max-width: 1199px) {
+  .config-page .config-page-tabs.ant-tabs-left > .ant-tabs-nav {
+    width: 184px;
+  }
+  .config-page-savebar.is-offset {
+    margin-inline-start: 200px;
+  }
+}
+.config-page-savebar-status {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.config-page-savebar-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--va-color-text-secondary);
+}
+.config-page-savebar-state.is-dirty {
+  color: var(--va-color-text);
+}
+.config-page-savebar-state.is-dirty .tabular-nums {
+  margin-inline-end: -4px;
+}
+.config-page-savebar-state.is-error {
+  color: var(--va-color-error);
+}
+.config-page-savebar-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--va-color-text-tertiary);
+}
+.config-page-savebar-actions {
+  margin-inline-start: auto;
+}
+
+/* ───────────── 保存结果页 ───────────── */
+.config-page-outcome .ant-result {
+  padding: 40px 16px 32px;
+}
+/* antd 给 .ant-result-extra 的最后一个子元素设了 margin-inline-end: 0，要压过它才能居中 */
+.config-page-outcome .ant-result-extra > .config-page-outcome-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 620px;
+  margin-inline: auto;
+  text-align: start;
+}
+.config-page-outcome-note.ant-typography {
+  font-size: 12px;
+}
+.config-page-outcome-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+.config-page-cmd {
+  position: relative;
+}
+.config-page-cmd .code-block {
+  padding-inline-end: 44px;
+  /* 命令优先在空格处折行，实在放不下再断词 */
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+.config-page-cmd-copy.ant-typography {
+  position: absolute;
+  top: 9px;
+  inset-inline-end: 12px;
+}
+
+@media (max-width: 575px) {
+  .config-page-group-icon,
+  .config-page .config-page-tabs.ant-tabs-top .config-page-tab-icon {
+    display: none;
+  }
+  .config-page-savebar {
+    bottom: 12px;
+    padding: 8px 8px 8px 14px;
+  }
+  .config-page-savebar-hint {
+    display: none;
+  }
+  .config-page-outcome .ant-result {
+    padding: 28px 0 20px;
+  }
+  .config-page-outcome .ant-result-title {
+    font-size: 19px;
+  }
+}

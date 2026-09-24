@@ -1,6 +1,6 @@
 /**
  * 运行期配置。生产环境来自 blade 注入的 window.settings；
- * 开发环境（vite dev）没有 blade，回落到 .env.local 里的 VITE_* 变量。
+ * 开发环境（vite dev）没有 blade，回落到 .env.development.local 里的 VITE_* 变量。
  */
 
 const injected = window.settings
@@ -12,13 +12,18 @@ const injected = window.settings
  * 所以只能从这里取。
  */
 export const securePath: string =
-  injected?.secure_path || import.meta.env.VITE_SECURE_PATH || ''
+  injected?.secure_path ||
+  // 只在 dev 读 VITE_SECURE_PATH：import.meta.env.DEV 在生产构建里被静态替换成 false，
+  // 整个分支连同字面量一起被摇掉。否则 .env / .env.local 里的真实 secure_path 会被
+  // 打进公开可访问的 app.js，任何人都能 grep 出后台秘密路径。
+  (import.meta.env.DEV ? import.meta.env.VITE_SECURE_PATH : '') ||
+  ''
 
 if (!securePath) {
   // 没有 secure_path 意味着所有管理接口都会 404，早失败比让用户对着空白页猜好。
   console.error(
     '[admin-v2] secure_path 缺失：生产环境请检查 blade 是否注入 window.settings，' +
-      '开发环境请在 admin-src/.env.local 里设置 VITE_SECURE_PATH。',
+      '开发环境请在 .env.development.local 里设置 VITE_SECURE_PATH。',
   )
 }
 
