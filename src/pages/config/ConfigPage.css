@@ -3,6 +3,19 @@
  * 选择器都以 .config-page 开头：既不污染别的页面，也稳稳压过 antd 同级选择器。
  */
 
+/*
+ * 页面强调色：导航选中项、分组图标共用。
+ * 文字/图标用 primary-text 而不是 primary：暗色下 primary 压在深色底上对比度只有 2 : 1 出头，
+ * 主题给 primary-text 单独配了亮一档的值（浅色下两者相同）。暗色的淡底再加深一点，才看得出选中。
+ */
+.config-page {
+  --config-accent: var(--va-color-primary-text);
+  --config-accent-bg: color-mix(in srgb, var(--va-color-primary) 10%, transparent);
+}
+html[data-theme='dark'] .config-page {
+  --config-accent-bg: color-mix(in srgb, var(--va-color-primary) 18%, transparent);
+}
+
 /* ───────────── 分组导航：Tabs 改成设置页式的菜单 ───────────── */
 .config-page .config-page-tabs .ant-tabs-ink-bar {
   display: none;
@@ -30,10 +43,10 @@
   color: var(--va-color-text);
 }
 .config-page .config-page-tabs > .ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active {
-  background: color-mix(in srgb, var(--va-color-primary) 10%, transparent);
+  background: var(--config-accent-bg);
 }
 .config-page .config-page-tabs > .ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
-  color: var(--va-color-primary);
+  color: var(--config-accent);
   font-weight: 600;
 }
 
@@ -56,37 +69,65 @@
   margin-top: 2px;
 }
 .config-page .config-page-tabs.ant-tabs-left > .ant-tabs-content-holder {
-  display: flex;
-  flex-direction: column;
   margin-inline-start: 0;
   border-inline-start: none;
   min-width: 0;
 }
-.config-page .config-page-tabs.ant-tabs-left > .ant-tabs-content-holder > .ant-tabs-content {
-  flex: 1;
-}
 .config-page .config-page-tabs.ant-tabs-left > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane {
   padding-inline-start: 0;
 }
-/* 字段少的分组卡片拉到和左侧导航一样高，底栏紧跟在两列下面，不留一截空白 */
-.config-page .config-page-tabs.ant-tabs-left > .ant-tabs-content-holder > .ant-tabs-content > .ant-tabs-tabpane-active,
-.config-page .config-page-tabs.ant-tabs-left .ant-tabs-tabpane-active > .config-page-group {
-  height: 100%;
-}
 
-/* 窄屏：顶部横排胶囊，放不下时 antd 自己收进「…」 */
+/*
+ * 窄屏：顶部横排胶囊，放不下时 antd 自己收进「…」；滚动时吸在顶栏下面（60px + 8px），
+ * 长分组滚到下面也能看到当前分组、随时切换。
+ *
+ * 这里的 nav 不能有左右 padding / border：rc-tabs 用 nav 的 offsetWidth 当可视宽度，
+ * 多出来的 14px 会让选中的胶囊滚过头、右侧圆角被 nav-wrap 切掉。
+ * 描边改用 inset 阴影，左右的留白放在标签列表首尾。
+ */
 .config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav {
+  position: sticky;
+  top: 68px;
+  z-index: 5;
   margin-bottom: 16px;
-  padding: 6px;
+  padding: 6px 0;
+  border: none;
+  box-shadow:
+    inset 0 0 0 1px var(--va-color-border-secondary),
+    var(--app-shadow-card);
 }
+/*
+ * antd 在这里画的是标签栏底线，用不上；改成一条页面底色的遮条，吸顶时盖住顶栏和标签栏之间那 8px，
+ * 免得正文从缝里露出来（顶栏是半透明毛玻璃，缝里却是清晰的字）。没吸顶时它落在标题和标签栏的间距里，看不见。
+ */
 .config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav::before {
-  display: none;
+  top: -9px;
+  bottom: auto;
+  left: 0;
+  right: 0;
+  height: 9px;
+  border: none;
+  background: var(--va-color-bg-layout);
+}
+/* 「…」里的分组一次列全，不再在 200px 高的小框里滚动 */
+.config-page-tabs-popup .ant-tabs-dropdown-menu {
+  max-height: min(420px, calc(100vh - 160px));
+}
+.config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav .ant-tabs-nav-list::after {
+  content: '';
+  flex: 0 0 6px;
 }
 .config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab {
   padding: 6px 12px;
 }
+.config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab:first-child {
+  margin-inline-start: 6px;
+}
 .config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav .ant-tabs-tab + .ant-tabs-tab {
   margin-inline-start: 4px;
+}
+.config-page .config-page-tabs.ant-tabs-top > .ant-tabs-nav .ant-tabs-nav-more {
+  padding: 6px 14px 6px 10px;
 }
 
 .config-page-tab {
@@ -143,8 +184,10 @@
 .config-page-group .ant-card-extra {
   margin-inline-start: 12px;
 }
-.config-page-group .ant-card-body {
+.config-page-group > .ant-card-body {
   padding-bottom: 4px;
+  /* 开关卡片的列数按卡片自己的宽度决定，见下方 .config-page-switches */
+  container: config-group / inline-size;
 }
 .config-page-group-head {
   display: flex;
@@ -161,8 +204,8 @@
   height: 36px;
   border-radius: 10px;
   font-size: 17px;
-  color: var(--va-color-primary);
-  background: color-mix(in srgb, var(--va-color-primary) 10%, transparent);
+  color: var(--config-accent);
+  background: var(--config-accent-bg);
 }
 .config-page-group-titles {
   min-width: 0;
@@ -180,6 +223,40 @@
   line-height: 1.5;
   color: var(--va-color-text-tertiary);
 }
+/* 警示性的分组说明（安全）：卡片顶部的警示条 */
+.config-page-group-alert.ant-alert {
+  margin-bottom: 18px;
+  padding: 8px 12px;
+}
+
+/*
+ * 一排开关卡片。按卡片内容宽度排：
+ *   < 520px    一列（1024 宽的笔记本上，侧边栏 + 分组导航之后内容列只剩 500 多 px）
+ *   ≥ 520px    两个一排；三个时前两个并排、第三个占满整行，不留半行空白
+ *   ≥ 800px    三个一排
+ */
+.config-page-switches {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 16px;
+}
+@container config-group (min-width: 520px) {
+  .config-page-switches.is-2,
+  .config-page-switches.is-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .config-page-switches.is-3 > .config-page-switch-cell:last-child {
+    grid-column: 1 / -1;
+  }
+}
+@container config-group (min-width: 800px) {
+  .config-page-switches.is-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .config-page-switches.is-3 > .config-page-switch-cell:last-child {
+    grid-column: auto;
+  }
+}
 
 /* label 旁的小标记：不改变 label 高度 */
 .config-page-label {
@@ -192,11 +269,17 @@
 .config-page-flag.ant-tag {
   margin: 0;
   padding-inline: 6px;
-  font-size: 11px;
-  line-height: 18px;
+  font-size: 12px;
+  line-height: 20px;
   font-weight: 500;
 }
 
+/* 字段下方的说明：和开关说明、小节说明同一档字号 */
+.config-page .ant-form-item-extra {
+  padding-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
 /* 出错时 antd 把 Form.Item 的下边距收成 0（留给错误提示），带 extra 的字段会和下一行贴在一起 */
 .config-page .ant-form-item-with-help .ant-form-item-extra {
   margin-bottom: 14px;
@@ -206,7 +289,7 @@
   margin-bottom: 8px;
 }
 
-/* ───────────── 底部保存栏：吸底，和右侧内容列对齐 ───────────── */
+/* ───────────── 底部保存栏：吸底，挂在当前分组卡片下面 ───────────── */
 .config-page-savebar {
   position: sticky;
   bottom: 16px;
@@ -216,6 +299,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px 16px;
+  margin-top: 16px;
   padding: 10px 12px 10px 18px;
   background: color-mix(in srgb, var(--va-color-bg-container) 86%, transparent);
   -webkit-backdrop-filter: saturate(180%) blur(12px);
@@ -224,16 +308,10 @@
   border-radius: var(--va-border-radius-lg);
   box-shadow: var(--va-box-shadow-secondary);
 }
-.config-page-savebar.is-offset {
-  margin-inline-start: 224px;
-}
 /* 992–1199：有侧边栏又有分组导航，内容列最窄，导航收窄一点 */
 @media (max-width: 1199px) {
   .config-page .config-page-tabs.ant-tabs-left > .ant-tabs-nav {
     width: 184px;
-  }
-  .config-page-savebar.is-offset {
-    margin-inline-start: 200px;
   }
 }
 .config-page-savebar-status {
@@ -254,7 +332,7 @@
 .config-page-savebar-state.is-dirty {
   color: var(--va-color-text);
 }
-.config-page-savebar-state.is-dirty .tabular-nums {
+.config-page-savebar-state .tabular-nums {
   margin-inline-end: -4px;
 }
 .config-page-savebar-state.is-error {
@@ -312,6 +390,7 @@
   }
   .config-page-savebar {
     bottom: 12px;
+    gap: 8px 12px;
     padding: 8px 8px 8px 14px;
   }
   .config-page-savebar-hint {

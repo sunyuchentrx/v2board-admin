@@ -303,8 +303,8 @@ function ThemeConfigDrawer({
     try {
       await saveThemeConfig(name, payload)
       setDirty(false)
-      // 提示默认贴在视口顶部 8px，正好压在抽屉 header 的关闭按钮和标题上；往下挪到 header 之下
-      message.success({ content: '主题配置已保存', style: { marginTop: 56 } })
+      // 提示位置已在共享层（MESSAGE_CONFIG）统一下移到顶栏之下，不会压住抽屉的关闭按钮
+      message.success('主题配置已保存')
       // 和原来的 Tab 表单一样，保存后留在表单里（重新拉取后回填），由用户自己关
       qc.invalidateQueries({ queryKey: ['theme-config', name] })
     } catch {

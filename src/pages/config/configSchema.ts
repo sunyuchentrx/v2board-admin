@@ -72,6 +72,8 @@ export interface ConfigGroup {
   title: string
   /** 展示在分组卡片标题下方 */
   description?: string
+  /** 展示用：'warning' 时说明改成卡片顶部的警示条，而不是标题下的灰字 */
+  descriptionTone?: 'warning'
   fields: ConfigField[]
 }
 
@@ -197,6 +199,7 @@ export const CONFIG_GROUPS: ConfigGroup[] = [
     key: 'safe',
     title: '安全',
     description: '涉及登录、注册与后台入口，改动前请确认影响面',
+    descriptionTone: 'warning',
     fields: [
       {
         name: 'secure_path',
@@ -320,13 +323,27 @@ export const CONFIG_GROUPS: ConfigGroup[] = [
         type: 'select',
         span: 12,
         section: { title: '订阅下发' },
+        // 选项含义见后端 Helper::getSubscribeUrl / Middleware\Client：
+        // 1 = 一次性 token（缓存 24 小时、拉取一次即作废），2 = TOTP（按下方有效期滚动）
         options: [
-          { value: 0, label: '带 token 查询参数' },
-          { value: 1, label: '形式 1' },
-          { value: 2, label: '形式 2' },
+          { value: 0, label: '永久有效' },
+          { value: 1, label: '一次性有效' },
+          { value: 2, label: '限时有效' },
         ],
+        helpAs: 'extra',
+        help: '一次性：只能拉取一次；限时：过期即失效',
       },
-      { name: 'show_subscribe_expire', label: '订阅到期提前提醒', type: 'number', span: 12, unit: '天' },
+      {
+        // 后端是 (int)show_subscribe_expire * 60 当 TOTP 时间窗口（秒），所以单位是分钟；
+        // 和「到期提醒」无关，只在「限时有效」下生效
+        name: 'show_subscribe_expire',
+        label: '限时链接有效期',
+        type: 'number',
+        span: 12,
+        unit: '分钟',
+        helpAs: 'extra',
+        help: '仅在「限时有效」形式下生效，默认 5 分钟',
+      },
       {
         name: 'show_info_to_server_enable',
         label: '向节点下发用户信息',
@@ -365,7 +382,14 @@ export const CONFIG_GROUPS: ConfigGroup[] = [
         help: '邀请码被使用后不失效，可以重复使用',
       },
       { name: 'invite_commission', label: '默认佣金比例', type: 'number', span: 12, unit: '%' },
-      { name: 'invite_gen_limit', label: '每人邀请码上限', type: 'number', span: 12 },
+      {
+        name: 'invite_gen_limit',
+        label: '每人邀请码上限',
+        type: 'number',
+        span: 12,
+        // 不加「个」后缀：输入框右侧的「个」在这套字体里像个 ↑ 箭头，会被当成步进按钮
+        help: '按未使用的邀请码计数，默认 5 个',
+      },
       {
         name: 'commission_first_time_enable',
         label: '仅首单返佣',
@@ -449,8 +473,25 @@ export const CONFIG_GROUPS: ConfigGroup[] = [
           { value: 1, label: '严格' },
         ],
       },
-      { name: 'server_node_report_min_traffic', label: '节点上报最小流量', type: 'number', span: 12 },
-      { name: 'server_device_online_min_traffic', label: '设备在线最小流量', type: 'number', span: 12 },
+      // 单位照原版后台（public/assets/admin/umi.js）的 addonAfter "Kb"；后端只是 (int) 原样下发给节点
+      {
+        name: 'server_node_report_min_traffic',
+        label: '节点上报最小流量',
+        type: 'number',
+        span: 12,
+        unit: 'KB',
+        helpAs: 'extra',
+        help: '每次推送只上报累计流量高于该值的用户，未上报的流量会继续累计',
+      },
+      {
+        name: 'server_device_online_min_traffic',
+        label: '设备在线最小流量',
+        type: 'number',
+        span: 12,
+        unit: 'KB',
+        helpAs: 'extra',
+        help: '每次推送只把流量高于该值的在线设备 IP 计入设备数',
+      },
     ],
   },
   {
@@ -583,6 +624,8 @@ export const CONFIG_GROUPS: ConfigGroup[] = [
           { value: 1, label: '仅付费用户' },
           { value: 2, label: '关闭工单' },
         ],
+        helpAs: 'extra',
+        help: '「仅付费用户」指有已完成（或已折抵）订单的用户',
       },
     ],
   },

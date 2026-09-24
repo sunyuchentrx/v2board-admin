@@ -13,13 +13,15 @@ import react from '@vitejs/plugin-react'
  *     缓存刷新交给 ?v= 查询参数（用 mtime / 版本号）。
  *   - 产物是 ES module，壳里必须用 <script type="module"> 加载。
  *
- * `base` 默认 '/'。如果产物不是挂在站点根，而是某个子路径
- * （例如 /assets/admin-v2/），构建时用 `vite build --base=/assets/admin-v2/` 指定。
+ * `base: './'`（相对路径）：产物里 app.css 引用字体、app.js 引用 chunk 都是相对自身的路径，
+ * 所以 dist/ 放在任何目录（例如 public/assets/admin-v2/）都能用，不用再在构建时传 --base。
+ * 以前是 '/'，引入 app.css（含 Inter 字体）后，挂在子路径下字体会 404。
  */
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', 'VITE_')
 
   return {
+    base: './',
     plugins: [react()],
     resolve: {
       alias: {

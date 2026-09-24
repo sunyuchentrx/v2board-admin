@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import ProTable, { type ActionType } from '@ant-design/pro-table'
+import ProTable, { type ActionType, type ColumnsState } from '@ant-design/pro-table'
 import { Badge, Button, Grid, Modal, Switch, Tag, Tooltip, Typography, message } from 'antd'
 import {
   ArrowRightOutlined,
@@ -68,10 +68,11 @@ function ScopeLine({ label, items }: { label: string; items: string[] }) {
   return (
     <div className="promo-scope">
       <span className="promo-scope-label">{label}</span>
-      <Tooltip title={items.join('、')}>
+      {/* 只有一个时不弹提示（内容就是标签本身），名字太长被省略时靠原生 title 看全名 */}
+      <Tooltip title={rest.length > 0 ? items.join('、') : undefined}>
         <span className="promo-scope-tags">
           {shown.map((item, i) => (
-            <Tag key={`${item}-${i}`} bordered={false}>
+            <Tag key={`${item}-${i}`} bordered={false} title={rest.length > 0 ? undefined : item}>
               {item}
             </Tag>
           ))}
@@ -84,6 +85,13 @@ function ScopeLine({ label, items }: { label: string; items: string[] }) {
       </Tooltip>
     </div>
   )
+}
+
+type ColumnsStateMap = Record<string, ColumnsState>
+
+/** 断点决定「操作」列固不固定（键是下面列定义里的 key 'actions'），只改这一列的 fixed */
+function withPinnedActions(map: ColumnsStateMap, pinned: boolean): ColumnsStateMap {
+  return { ...map, actions: { ...map.actions, fixed: pinned ? 'right' : undefined } }
 }
 
 export default function CouponList() {
@@ -107,6 +115,17 @@ export default function CouponList() {
   // useBreakpoint 首次渲染返回 {}，先用 matchMedia 同步判断，免得手机上先固定再松开闪一下
   const screens = Grid.useBreakpoint()
   const pinActions = screens.md ?? window.matchMedia('(min-width: 768px)').matches
+  // ProTable 只在挂载时从列定义读一次 fixed、之后以列设置状态为准，所以把列设置状态受控：
+  // 断点变了只改操作列的 fixed（跨断点缩放窗口时也能跟着变），用户在列设置里调过的显隐、顺序原样保留
+  const [columnsState, setColumnsState] = useState<ColumnsStateMap>(() =>
+    withPinnedActions({}, pinActions),
+  )
+  const [pinnedFor, setPinnedFor] = useState(pinActions)
+  if (pinnedFor !== pinActions) {
+    // 渲染期间按新断点调整状态（React 推荐的写法，比 useEffect 少一次用旧值渲染）
+    setPinnedFor(pinActions)
+    setColumnsState((s) => withPinnedActions(s, pinActions))
+  }
 
   const reload = () => tableRef.current?.reload()
 
@@ -327,6 +346,12 @@ export default function CouponList() {
           pageSizeOptions: [10, 20, 50, 100],
           showSizeChanger: true,
           showTotal: (t) => `共 ${t} 张券`,
+        }}
+        columnsState={{
+          value: columnsState,
+          onChange: setColumnsState,
+          // 列设置里的「重置」回到当前断点的默认值
+          defaultValue: withPinnedActions({}, pinActions),
         }}
         search={false}
         options={{ density: false, fullScreen: true, setting: true, reload: false }}

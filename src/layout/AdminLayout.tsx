@@ -114,6 +114,13 @@ function SideMenu({
     [collapsed, onNavigate],
   )
 
+  // 窗口较矮时选中项可能在侧边栏可视区外（例如「系统」分组），路由变化后把它滚进来
+  useEffect(() => {
+    document
+      .querySelector('.app-menu .ant-menu-item-selected')
+      ?.scrollIntoView({ block: 'nearest' })
+  }, [location.pathname])
+
   return (
     <Menu
       className="app-menu"

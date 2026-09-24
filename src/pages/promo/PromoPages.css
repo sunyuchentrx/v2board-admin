@@ -76,6 +76,17 @@ td.promo-name-col {
 .promo-code .ant-typography-copy {
   margin-inline-start: 2px;
 }
+/*
+ * 复制图标平时用中性色、悬停才变主色：每行一个主色图标太抢眼，暗色下主色图标在深底上也不够清楚。
+ * 排除「已复制」状态，保留 antd 的成功色对勾。
+ */
+.promo-code .ant-typography-copy:not(.ant-typography-copy-success) {
+  color: var(--va-color-text-tertiary);
+}
+.promo-code .ant-typography-copy:not(.ant-typography-copy-success):hover,
+.promo-code .ant-typography-copy:not(.ant-typography-copy-success):focus-visible {
+  color: var(--va-color-primary);
+}
 
 /* 面值标签：比默认 Tag 稍大一点，数字等宽 */
 .promo-value-tag.ant-tag {
@@ -127,6 +138,8 @@ td.promo-name-col {
 .promo-scope .ant-tag {
   margin: 0;
   font-size: 12px;
+  /* 默认 Tag 底色和表格行悬停底色几乎一样，悬停时标签会「消失」；用半透明填充色，任何底色上都看得出 */
+  background: var(--va-color-fill-secondary);
   /* 两行（套餐 + 周期）叠起来也不比其它两行单元格高，整表行高一致 */
   line-height: 18px;
   min-width: 0;
@@ -243,6 +256,10 @@ td.promo-name-col {
  */
 .promo-form .ant-row:has(.ant-form-item-has-error) + .promo-hint,
 .promo-form .ant-form-item-has-error + .promo-hint {
+  margin-top: 6px;
+}
+/* 同理：「时长」报错时，紧跟在下面的「永久套餐」开关卡片也别贴着错误文字 */
+.promo-form .ant-row:has(.ant-form-item-has-error) + .setting-switch-item {
   margin-top: 6px;
 }
 

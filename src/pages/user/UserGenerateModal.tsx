@@ -269,11 +269,13 @@ export default function UserGenerateModal({ open, onClose, onDone }: Props) {
       // 执行中不许关：关掉再打开就能重复提交，而前一个请求在后端还在跑
       closable={!submitting}
       keyboard={!submitting}
-      // 表单里有预填的随机密码，点遮罩误关会丢掉它，所以一律不响应遮罩点击
-      maskClosable={false}
+      maskClosable={!submitting}
       cancelButtonProps={{ disabled: submitting }}
       width={640}
       destroyOnHidden
+      // body 限高 100vh - 240 后弹窗最高约 100vh - 88（头 + 尾约 152px），top 44 让长弹窗上下留白一致；
+      // 默认 top 100 时底部只剩约 12px，遮罩还会多出一截滚动。不用 centered：切换内容时弹窗会上下跳
+      style={{ top: 44 }}
       styles={{ body: { maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' } }}
     >
       <div className="user-page-stack">
@@ -441,7 +443,8 @@ export default function UserGenerateModal({ open, onClose, onDone }: Props) {
                 <strong className="tabular-nums">{previewCount || '—'}</strong> 个随机邮箱
                 {previewSuffix ? (
                   <>
-                    ，形如 <span className="mono">xxxx@{previewSuffix}</span>
+                    ，形如 <span className="mono">xxxxxx@{previewSuffix}</span>
+                    （前缀为 6 位随机字符）
                   </>
                 ) : (
                   '，填写后缀后预览'

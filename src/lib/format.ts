@@ -47,9 +47,16 @@ export function yuanToCents(yuan: number | null | undefined): number {
   return Math.round(yuan * 100)
 }
 
-/** 分 → 「¥12.34」 */
+const MONEY_FORMAT = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
+/** 分 → 「¥1,234.56」（只用于展示；表单回填用 centsToYuan） */
 export function formatMoney(cents: number | null | undefined): string {
-  return `¥${centsToYuan(cents).toFixed(2)}`
+  const yuan = centsToYuan(cents)
+  // 负数（退款、扣减）把符号放在 ¥ 前面：-¥12.00
+  return `${yuan < 0 ? '-' : ''}¥${MONEY_FORMAT.format(Math.abs(yuan))}`
 }
 
 function pad(n: number): string {

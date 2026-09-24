@@ -8,7 +8,16 @@
   color: var(--va-color-text-secondary);
 }
 
-/* 两行单元格：主信息 + 12px 次要信息 */
+/*
+ * 两行单元格：主信息 + 12px 次要信息。
+ * min-height 统一成两行内容里最高的那种（邮箱 + 复制图标 / 套餐名 + 到期），
+ * 只有一行或行高略矮的单元格垂直居中，整页行高就不会 64 / 67px 来回跳。
+ */
+.user-page-cell,
+.user-page-traffic {
+  min-height: 42px;
+  justify-content: center;
+}
 .user-page-cell {
   display: flex;
   flex-direction: column;
@@ -23,15 +32,18 @@
   min-width: 0;
 }
 .user-page-email.ant-typography {
+  /* 按内容宽度收缩（复制图标紧跟邮箱），超长时才省略 */
+  align-self: flex-start;
+  max-width: 100%;
   min-width: 0;
-  flex: 0 1 auto;
   margin: 0;
 }
 .user-page-tag.ant-tag {
   margin: 0;
   flex-shrink: 0;
   font-size: 11.5px;
-  line-height: 18px;
+  /* 16 + 上下 1px 透明边框 = 18，和旁边 12px 备注的行高一致，带标签的行不会高出一截 */
+  line-height: 16px;
   padding-inline: 6px;
 }
 .user-page-sub,
@@ -44,18 +56,30 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 小字状态色用 -text 色阶：基础色在暗色下被压暗、浅色下橙色偏浅，12px 小字达不到 AA */
 .user-page-sub.is-success {
-  color: var(--va-color-success);
+  color: var(--va-color-success-text);
 }
 .user-page-sub.is-warning {
-  color: var(--va-color-warning);
+  color: var(--va-color-warning-text);
 }
 .user-page-sub.is-danger {
-  color: var(--va-color-error);
+  color: var(--va-color-error-text);
+}
+.user-page-sub.is-active {
+  color: var(--va-color-text-secondary);
 }
 .user-page-remark.ant-typography {
   margin: 0;
+  min-width: 0;
+  flex: 0 1 auto;
   max-width: 100%;
+}
+
+/* 余额 / 佣金：两行右对齐 */
+.user-page-money {
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
 }
 
 /* 流量：用量文字 + 细进度条 */
@@ -76,10 +100,10 @@
   font-size: 12px;
 }
 .user-page-traffic.is-warning .user-page-traffic-text {
-  color: var(--va-color-warning);
+  color: var(--va-color-warning-text);
 }
 .user-page-traffic.is-danger .user-page-traffic-text {
-  color: var(--va-color-error);
+  color: var(--va-color-error-text);
 }
 .user-page-traffic .ant-progress {
   margin: 0;
@@ -92,12 +116,17 @@
   background: var(--va-color-fill-secondary);
 }
 
-/* 操作列：RowActions + 「更多」 */
+/* 操作列：RowActions（「编辑」+「更多」） */
 .user-page-actions {
   display: inline-flex;
   align-items: center;
   gap: 2px;
   white-space: nowrap;
+}
+/* 手机上只剩一个「⋮」：放大到 32px，手指好点 */
+.user-page-actions.is-touch .ant-btn.ant-btn-icon-only {
+  width: 32px;
+  height: 32px;
 }
 
 /* ───────────── 弹窗 ───────────── */
@@ -125,6 +154,15 @@
   min-width: 44px;
   justify-content: center;
   flex-shrink: 0;
+}
+/* Space.Addon 不认表单状态：报错时跟着输入框变红，禁用（加载中）时跟着变灰，否则红框 / 灰底只框了一半 */
+.ant-form-item-has-error .user-page-unit.ant-space-addon {
+  color: var(--va-color-error-text);
+  border-color: var(--va-color-error);
+}
+.ant-form-item-control-input-content:has(.ant-input-number-disabled) .user-page-unit.ant-space-addon {
+  color: var(--va-color-text-disabled);
+  background: var(--va-color-bg-container-disabled);
 }
 
 /* 可复制的凭证（初始密码等） */
@@ -163,7 +201,8 @@
   align-items: baseline;
   flex-wrap: wrap;
   gap: 4px 10px;
-  margin: -6px 0 18px;
+  /* 不能用负 margin 往上贴：上一行的校验报错就显示在那段间距里，会压到虚线框上 */
+  margin: 0 0 20px;
   padding: 8px 12px;
   border-radius: var(--va-border-radius);
   background: var(--va-color-fill-alter);
@@ -196,6 +235,10 @@
 .user-page-stack:empty {
   display: none;
 }
+/* 弹窗里两组提示（Spin 外的超时 / 执行中 + Spin 内的影响范围）之间也用组内的 12px，只有整组最后留 20px 与表单隔开 */
+.user-page-stack:has(+ .ant-spin-nested-loading) {
+  margin-bottom: 12px;
+}
 .user-page-alert-body {
   display: flex;
   flex-direction: column;
@@ -203,6 +246,11 @@
 }
 .user-page-alert-body p {
   margin: 0;
+}
+/* 可展开的一行说明（Typography.Paragraph ellipsis） */
+.user-page-alert-collapse.ant-typography {
+  margin: 0;
+  color: inherit;
 }
 
 /* 条件标签：key / 比较符 / 值 */
@@ -239,7 +287,7 @@
   margin-inline: 6px;
   font-family: var(--va-font-family-code);
   font-weight: 600;
-  color: var(--va-color-error);
+  color: var(--va-color-error-text);
 }
 .user-page-confirm-input.ant-input {
   font-family: var(--va-font-family-code);

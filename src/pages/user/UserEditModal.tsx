@@ -377,13 +377,16 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
       width={760}
       destroyOnHidden
       maskClosable={false}
+      // body 限高 100vh - 240 后弹窗最高约 100vh - 88（头 + 尾约 152px），top 44 让长弹窗上下留白一致；
+      // 默认 top 100 时底部只剩约 12px，遮罩还会多出一截滚动。不用 centered：切换内容时弹窗会上下跳
+      style={{ top: 44 }}
       styles={{ body: { maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' } }}
     >
       {detailState.status === 'error' ? (
+        // 加载失败时它是弹窗里唯一的内容，不留下边距，上下才对称
         <Alert
           type="error"
           showIcon
-          style={{ marginBottom: 20 }}
           message="用户详情加载失败，暂时不能保存"
           description={
             <div className="user-page-alert-body">
@@ -406,7 +409,19 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
             showIcon
             style={{ marginBottom: 20 }}
             message="套餐和邀请人每次保存都会按表单当前值提交"
-            description="后端更新接口把缺省的套餐当作清空用户分组、把缺省的邀请人邮箱当作解除邀请关系，所以这两项总是提交。表单已按打开时的最新数据回填；流量、余额、佣金、到期时间等其余字段只在你改动过时才提交，没动过的保持后端当前值不变。"
+            // 说明默认只露一行，需要时展开：完整显示时手机上要占掉 7 行，把表单挤到下面
+            description={
+              <Typography.Paragraph
+                className="user-page-alert-collapse"
+                ellipsis={{
+                  rows: 1,
+                  expandable: 'collapsible',
+                  symbol: (expanded) => (expanded ? '收起' : '展开说明'),
+                }}
+              >
+                后端更新接口把缺省的套餐当作清空用户分组、把缺省的邀请人邮箱当作解除邀请关系，所以这两项总是提交。表单已按打开时的最新数据回填；流量、余额、佣金、到期时间等其余字段只在你改动过时才提交，没动过的保持后端当前值不变。
+              </Typography.Paragraph>
+            }
           />
 
           {/* 加载中禁用整个表单：Spin 只挡鼠标，挡不住键盘 Tab 进输入框 */}
@@ -466,20 +481,23 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
-                  <Form.Item name="expired_at" label="到期时间">
-                    <DatePicker
-                      showTime
-                      style={{ width: '100%' }}
-                      disabled={neverExpire}
-                      placeholder={neverExpire ? '长期有效' : '未订阅'}
-                    />
+                  {/*
+                    长期有效时只是把日期框藏起来（hidden 仍保留字段注册和原值，关掉开关原日期还在），
+                    换成一个只读的「长期有效」，免得界面上同时出现「长期有效」和一个具体到期日。
+                    提交仍走 toExpiredAt，neverExpire 优先。
+                  */}
+                  <Form.Item name="expired_at" label="到期时间" hidden={!!neverExpire}>
+                    <DatePicker showTime style={{ width: '100%' }} placeholder="未订阅" />
+                  </Form.Item>
+                  <Form.Item label="到期时间" hidden={!neverExpire}>
+                    <Input disabled value="长期有效" />
                   </Form.Item>
                 </Col>
               </Row>
               <SettingSwitch
                 name="neverExpire"
                 title="长期有效"
-                description="开启后不再有到期时间，上面选的到期时间会被忽略"
+                description="开启后不再有到期时间，已选的到期时间会被忽略（关闭后恢复）"
               />
             </FormSection>
 
@@ -490,24 +508,24 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
                     <UnitNumber unit="GB" min={0} step={1} />
                   </Form.Item>
                 </Col>
-                <Col xs={24} sm={8}>
+                <Col xs={12} sm={8}>
                   <Form.Item name="u_gib" label="已用上行">
                     <UnitNumber unit="GB" min={0} step={0.01} />
                   </Form.Item>
                 </Col>
-                <Col xs={24} sm={8}>
+                <Col xs={12} sm={8}>
                   <Form.Item name="d_gib" label="已用下行">
                     <UnitNumber unit="GB" min={0} step={0.01} />
                   </Form.Item>
                 </Col>
               </Row>
               <Row gutter={16}>
-                <Col xs={24} sm={12}>
+                <Col xs={12} sm={12}>
                   <Form.Item name="device_limit" label="设备数限制">
                     <UnitNumber unit="台" min={0} placeholder="不限" />
                   </Form.Item>
                 </Col>
-                <Col xs={24} sm={12}>
+                <Col xs={12} sm={12}>
                   <Form.Item name="speed_limit" label="限速">
                     <UnitNumber unit="Mbps" min={0} placeholder="不限" />
                   </Form.Item>
@@ -517,12 +535,12 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
 
             <FormSection title="资金与推广">
               <Row gutter={16}>
-                <Col xs={24} sm={12}>
+                <Col xs={12} sm={12}>
                   <Form.Item name="balance_yuan" label="余额">
                     <UnitNumber unit="¥" unitBefore min={0} step={0.01} precision={2} />
                   </Form.Item>
                 </Col>
-                <Col xs={24} sm={12}>
+                <Col xs={12} sm={12}>
                   <Form.Item name="commission_balance_yuan" label="佣金余额">
                     <UnitNumber unit="¥" unitBefore min={0} step={0.01} precision={2} />
                   </Form.Item>
@@ -595,7 +613,12 @@ export default function UserEditModal({ open, user, onClose, onSaved }: Props) {
                   <SettingSwitch name="is_admin" title="管理员" description="可登录管理后台" />
                 </Col>
                 <Col xs={24} sm={8}>
-                  <SettingSwitch name="is_staff" title="员工（客服）" description="员工后台：工单、公告等" />
+                  {/* 后端 StaffRoute：工单、公告之外，员工还能调 user/update、user/ban、user/sendMail */}
+                  <SettingSwitch
+                    name="is_staff"
+                    title="员工（客服）"
+                    description="可进员工后台：处理工单、发公告、编辑 / 封禁用户、群发邮件"
+                  />
                 </Col>
               </Row>
             </FormSection>

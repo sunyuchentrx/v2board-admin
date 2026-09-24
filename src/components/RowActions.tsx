@@ -22,6 +22,15 @@ export interface RowAction {
   divider?: boolean
 }
 
+/**
+ * 触屏设备（没有 hover）上不挂 Tooltip：点一下会触发模拟 hover，提示弹出后要等下一次触摸别处才消失，
+ * 点删除图标再取消确认框时，提示会一直浮在表格上。触屏上图标按钮的含义靠 aria-label + 确认框文案说明。
+ */
+const HOVER_CAPABLE =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(hover: hover)').matches
+    : true
+
 export default function RowActions({
   actions,
   inline = 2,
@@ -52,7 +61,7 @@ export default function RowActions({
     <span className="row-actions">
       {shown.map((a) =>
         a.iconOnly ? (
-          <Tooltip key={a.key} title={a.label}>
+          <Tooltip key={a.key} title={a.label} trigger={HOVER_CAPABLE ? 'hover' : []}>
             <Button
               type="text"
               size="small"

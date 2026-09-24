@@ -88,7 +88,8 @@ export interface AdminPayment {
   config: Record<string, unknown> | string
   notify_domain: string | null
   handling_fee_fixed: number | null
-  handling_fee_percent: number | null
+  /** decimal 列，后端常以字符串返回（如 "3.50"），用前先转数字 */
+  handling_fee_percent: number | string | null
   enable: number
   sort: number | null
   created_at: number

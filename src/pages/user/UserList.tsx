@@ -6,6 +6,7 @@ import {
   Grid,
   Modal,
   Space,
+  Tooltip,
   Typography,
   message,
 } from 'antd'
@@ -16,7 +17,6 @@ import {
   EditOutlined,
   ExclamationCircleFilled,
   MailOutlined,
-  MoreOutlined,
   PlusOutlined,
   ReloadOutlined,
   StopOutlined,
@@ -44,10 +44,10 @@ import './UserList.css'
 const COLUMNS_STATE_KEY = 'v2board_admin_v2_user_columns'
 
 /**
- * 默认显示的列（含操作列）宽度之和。表格用 table-layout: fixed，
- * 容器更宽时按比例拉伸；在列设置里打开更多列、总宽超过它时自动出现横向滚动。
+ * 操作列宽度。宽屏：「编辑」+「⋮」（重置订阅 / 删除收进菜单）；
+ * 手机：只有一个「⋮」，让 ID + 邮箱 + 操作列能在 390 宽下一屏放下。
  */
-const TABLE_MIN_WIDTH = 1106
+const ACTION_COLUMN_WIDTH = { wide: 88, narrow: 52 }
 
 export default function UserList() {
   const tableRef = useRef<ActionType>(null)
@@ -61,6 +61,17 @@ export default function UserList() {
   // 手机上（< md）不固定左侧列，操作按钮只显示图标，否则固定列会占满整屏
   const wide = screens.md !== false
   const columns = buildUserColumns({ pin: wide })
+  const actionWidth = wide ? ACTION_COLUMN_WIDTH.wide : ACTION_COLUMN_WIDTH.narrow
+  /**
+   * 默认显示的列（含操作列）宽度之和。表格用 table-layout: fixed，
+   * 容器更宽时按比例拉伸；在列设置里打开更多列、总宽超过它时自动出现横向滚动。
+   */
+  const tableMinWidth =
+    columns
+      .filter(
+        (c) => !(USER_COLUMNS_HIDDEN_BY_DEFAULT as readonly unknown[]).includes(c.key),
+      )
+      .reduce((sum, c) => sum + (typeof c.width === 'number' ? c.width : 0), 0) + actionWidth
 
   const reload = useCallback(() => {
     tableRef.current?.reload()
@@ -131,48 +142,37 @@ export default function UserList() {
             title: '操作',
             key: 'option',
             valueType: 'option',
-            // 宽屏：文字按钮（不带图标，省下的宽度留给余额 / 佣金列）；手机：只显示图标
-            width: wide ? 170 : 112,
+            // 宽屏：「编辑」文字按钮 +「⋮」；手机：只有「⋮」（编辑也在菜单里），见 ACTION_COLUMN_WIDTH
+            width: actionWidth,
             fixed: 'right',
             render: (_, row) => (
-              <span className="user-page-actions">
+              <span className={`user-page-actions${wide ? '' : ' is-touch'}`}>
+                {/* 重置订阅 / 删除都收进「更多」：两者都会让用户的订阅立即失效，危险动作不该直接露在行里 */}
                 <RowActions
-                  inline={2}
+                  inline={wide ? 1 : 0}
                   actions={[
                     {
                       key: 'edit',
                       label: '编辑',
                       icon: wide ? undefined : <EditOutlined />,
-                      iconOnly: !wide,
                       onClick: () => setEditing(row),
                     },
                     {
                       key: 'reset',
                       label: '重置订阅',
-                      icon: wide ? undefined : <SyncOutlined />,
-                      iconOnly: !wide,
+                      icon: <SyncOutlined />,
                       onClick: () => handleResetSecret(row),
+                    },
+                    {
+                      key: 'del',
+                      label: '删除用户',
+                      icon: <DeleteOutlined />,
+                      danger: true,
+                      divider: true,
+                      onClick: () => handleDelete(row),
                     },
                   ]}
                 />
-                {/* 删除单独放进「更多」：RowActions 只多出一个动作时会平铺，危险动作不该直接露在行里 */}
-                <Dropdown
-                  trigger={['click']}
-                  placement="bottomRight"
-                  menu={{
-                    items: [
-                      {
-                        key: 'del',
-                        icon: <DeleteOutlined />,
-                        label: '删除用户',
-                        danger: true,
-                        onClick: () => handleDelete(row),
-                      },
-                    ],
-                  }}
-                >
-                  <Button type="text" size="small" icon={<MoreOutlined />} aria-label="更多操作" />
-                </Dropdown>
               </span>
             ),
           },
@@ -200,7 +200,8 @@ export default function UserList() {
           showTotal: (t) => `共 ${t} 个用户`,
         }}
         search={false}
-        options={{ density: false, fullScreen: true, setting: true, reload: false }}
+        // 手机上全屏没有意义，省下的位置让工具栏排成一行
+        options={{ density: false, fullScreen: wide, setting: true, reload: false }}
         columnsState={{
           persistenceKey: COLUMNS_STATE_KEY,
           persistenceType: 'localStorage',
@@ -208,7 +209,7 @@ export default function UserList() {
             USER_COLUMNS_HIDDEN_BY_DEFAULT.map((key) => [key, { show: false }]),
           ),
         }}
-        scroll={{ x: TABLE_MIN_WIDTH }}
+        scroll={{ x: tableMinWidth }}
         dateFormatter="string"
         headerTitle={
           <Space size={10} wrap>
@@ -218,18 +219,23 @@ export default function UserList() {
             </Typography.Text>
           </Space>
         }
+        // 手机上刷新 / 导出只显示图标（带 tooltip），四个按钮 + 列设置才能排成一行
         toolBarRender={() => [
-          <Button key="reload" icon={<ReloadOutlined />} onClick={reload}>
-            刷新
-          </Button>,
-          <Button
-            key="export"
-            icon={<DownloadOutlined />}
-            loading={exporting}
-            onClick={handleExport}
-          >
-            导出 CSV
-          </Button>,
+          <Tooltip key="reload" title={wide ? undefined : '刷新'}>
+            <Button icon={<ReloadOutlined />} onClick={reload} aria-label={wide ? undefined : '刷新'}>
+              {wide && '刷新'}
+            </Button>
+          </Tooltip>,
+          <Tooltip key="export" title={wide ? undefined : '导出 CSV（按筛选结果）'}>
+            <Button
+              icon={<DownloadOutlined />}
+              loading={exporting}
+              onClick={handleExport}
+              aria-label={wide ? undefined : '导出 CSV'}
+            >
+              {wide && '导出 CSV'}
+            </Button>
+          </Tooltip>,
           <Dropdown
             key="bulk"
             // 必须显式指定 click：antd Dropdown 默认 hover 触发，

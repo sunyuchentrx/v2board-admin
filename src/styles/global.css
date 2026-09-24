@@ -21,6 +21,9 @@ body {
 
 body {
   background: var(--va-color-bg-layout, #f4f5f8);
+  color: var(--va-color-text);
+  /* antd 只给组件自身设字体，页面里的自定义元素要从 body 继承同一套 */
+  font-family: var(--va-font-family);
   font-feature-settings: 'cv11', 'ss01';
 }
 
@@ -94,11 +97,21 @@ body {
   .ant-pro-table-list-toolbar-container {
     flex-direction: column;
     align-items: stretch !important;
+    gap: 8px;
+    padding-block: 12px 8px;
   }
   .ant-pro-table-list-toolbar-left,
   .ant-pro-table-list-toolbar-right {
     max-width: 100%;
-    justify-content: flex-start !important;
+  }
+  .ant-pro-table-list-toolbar-left {
+    margin-bottom: 0 !important;
+  }
+  /* 按钮靠右，和上方过滤条的「查询」方向一致 */
+  .ant-pro-table-list-toolbar-right {
+    justify-content: flex-end !important;
+    flex-wrap: wrap;
+    row-gap: 8px;
   }
   /* toolBarRender 的按钮被 ProTable 包在一个无 class 的 flex div 里，默认不换行 */
   .ant-pro-table-list-toolbar-right > div:not([class*='setting-items']) {
@@ -141,12 +154,68 @@ body {
 .ant-form-item-label > label {
   font-weight: 500;
 }
+/* 校验报错下方留一点空，不要贴着下一行的标签 */
+.ant-form-item-with-help .ant-form-item-explain {
+  padding-bottom: 4px;
+}
 /* 在表单里被当成标签用的 Divider：左对齐小标题 */
 .ant-divider-horizontal.ant-divider-with-text-left.ant-divider-plain {
   font-weight: 600;
   font-size: 13px;
   color: var(--va-color-text-secondary);
   margin-block: 8px 16px;
+}
+
+/* 危险按钮的焦点环用红色，不要红按钮套一圈主色紫框（Modal.confirm 会自动聚焦确认按钮） */
+.ant-btn-dangerous:focus-visible {
+  outline-color: var(--va-color-error-border) !important;
+}
+
+/*
+ * 暗色下的「语义色当文字用」：darkAlgorithm 把主色 / 错误色压暗（#575ad0 / #be2323），
+ * 做按钮底色合适，但直接当文字（状态标签、选中 Tab、分页、危险文字按钮）在深色卡片上只有 2.4~2.9:1。
+ * 这些地方改用 theme 里专门调亮的 *-text 档（见 DARK_TEXT_COLORS），≥ 4.5:1。
+ */
+/* 浅色下状态标签同样用文字档（warning / success 的默认色在浅底上只有约 3:1） */
+[data-theme='light'] .ant-tag-warning {
+  color: var(--va-color-warning-text);
+}
+[data-theme='light'] .ant-tag-success {
+  color: var(--va-color-success-text);
+}
+[data-theme='light'] .ant-tag-error {
+  color: var(--va-color-error-text);
+}
+[data-theme='dark'] .ant-tag-processing {
+  color: var(--va-color-info-text);
+}
+[data-theme='dark'] .ant-tag-error {
+  color: var(--va-color-error-text);
+}
+[data-theme='dark'] .ant-tag-success {
+  color: var(--va-color-success-text);
+}
+[data-theme='dark'] .ant-tag-warning {
+  color: var(--va-color-warning-text);
+}
+[data-theme='dark'] .ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn,
+[data-theme='dark'] .ant-tabs .ant-tabs-tab:hover {
+  color: var(--va-color-primary-text);
+}
+[data-theme='dark'] .ant-pagination .ant-pagination-item-active a {
+  color: var(--va-color-primary-text);
+}
+[data-theme='dark'] .ant-form-item-explain-error {
+  color: var(--va-color-error-text);
+}
+[data-theme='dark'] .ant-dropdown-menu-item-selected,
+[data-theme='dark'] .ant-dropdown-menu-item-selected .ant-dropdown-menu-title-content {
+  color: var(--va-color-primary-text) !important;
+}
+[data-theme='dark'] .ant-btn-dangerous.ant-btn-link:not(:disabled),
+[data-theme='dark'] .ant-btn-dangerous.ant-btn-text:not(:disabled),
+[data-theme='dark'] .ant-typography.ant-typography-danger {
+  color: var(--va-color-error-text);
 }
 
 /* ───────────── 弹窗 / 抽屉 ───────────── */

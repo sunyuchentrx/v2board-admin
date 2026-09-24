@@ -11,7 +11,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from '@/auth/AuthContext'
 import { setErrorNotifier } from '@/lib/notify'
 import { uiBasePath } from '@/settings'
-import { ThemeProvider } from '@/theme'
+import { MESSAGE_CONFIG, ThemeProvider } from '@/theme'
 import AdminLayout from '@/layout/AdminLayout'
 import { NAV_ITEMS } from '@/layout/navigation'
 import Login from '@/pages/Login'
@@ -112,7 +112,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AntdApp>
+      <AntdApp message={MESSAGE_CONFIG}>
         <NotifierBridge />
         <QueryClientProvider client={queryClient}>
           {/*

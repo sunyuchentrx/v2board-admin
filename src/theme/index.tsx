@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { App as AntdApp, ConfigProvider, theme as antdTheme, type ThemeConfig } from 'antd'
+import { App as AntdApp, ConfigProvider, message, theme as antdTheme, type ThemeConfig } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import { settings } from '@/settings'
 
@@ -74,6 +74,34 @@ const NEUTRAL = {
 
 export const SIDER_BG = '#0f1219'
 
+/**
+ * 暗色下的主色要亮一档：darkAlgorithm 会把 #4f46e5 派生出的文字色 / 链接色压到 #463fc6，
+ * 在 #15181f 卡片上对比度只有 2.4:1，「编辑」这类链接和 processing 标签几乎看不清。
+ */
+const PRIMARY_DARK = '#6366f1'
+
+/** 暗色下各语义色的文字档位，保证小字（12px 标签）在深色底上 ≥ 4.5:1 */
+const DARK_TEXT_COLORS = {
+  colorPrimaryText: '#a5b4fc',
+  colorPrimaryTextHover: '#c7d2fe',
+  colorPrimaryTextActive: '#818cf8',
+  colorInfoText: '#a5b4fc',
+  colorInfoTextHover: '#c7d2fe',
+  colorLinkHover: '#a5b4fc',
+  colorLinkActive: '#6366f1',
+  colorErrorText: '#f87171',
+  colorErrorTextHover: '#fca5a5',
+  colorSuccessText: '#4ade80',
+  colorWarningText: '#fbbf24',
+} as const
+
+/** 浅色下 warning / success 默认色在各自的浅底标签上只有约 3:1，文字档加深一级 */
+const LIGHT_TEXT_COLORS = {
+  colorWarningText: '#b45309',
+  colorSuccessText: '#166534',
+  colorErrorText: '#b91c1c',
+} as const
+
 export function buildTheme(mode: ColorMode): ThemeConfig {
   const n = NEUTRAL[mode]
   const dark = mode === 'dark'
@@ -84,12 +112,14 @@ export function buildTheme(mode: ColorMode): ThemeConfig {
     cssVar: { key: 'v2a', prefix: 'va' },
     hashed: false,
     token: {
-      colorPrimary: PRIMARY,
-      colorInfo: PRIMARY,
+      colorPrimary: dark ? PRIMARY_DARK : PRIMARY,
+      colorInfo: dark ? PRIMARY_DARK : PRIMARY,
       colorSuccess: '#16a34a',
       colorWarning: '#d97706',
       colorError: '#dc2626',
-      colorLink: PRIMARY,
+      // 暗色链接种子要给得比目标更亮：darkAlgorithm 还会再压一档（#a5b4fc → #8f9cd9，在卡片上 6.7:1）
+      colorLink: dark ? '#a5b4fc' : PRIMARY,
+      ...(dark ? DARK_TEXT_COLORS : LIGHT_TEXT_COLORS),
       colorBgLayout: n.layout,
       colorBgContainer: n.container,
       colorBgElevated: n.elevated,
@@ -153,10 +183,14 @@ export function buildTheme(mode: ColorMode): ThemeConfig {
         cellPaddingBlock: 12,
         cellPaddingInline: 14,
         cellPaddingBlockSM: 8,
+        // ProTable 默认是 middle 尺寸，走的是 *MD 这一档，不设的话左右只有 8px
+        cellPaddingBlockMD: 12,
+        cellPaddingInlineMD: 12,
         borderColor: n.borderSecondary,
       },
       Form: {
-        itemMarginBottom: 18,
+        // 20 而不是 18：校验报错会占掉这段间距，太小会让报错文字贴着下一行的标签
+        itemMarginBottom: 20,
         verticalLabelPadding: '0 0 6px',
         labelColor: dark ? 'rgba(230, 232, 238, 0.85)' : '#3a4150',
       },
@@ -181,7 +215,10 @@ export function buildTheme(mode: ColorMode): ThemeConfig {
       Tag: { defaultBg: n.fillAlter },
       Divider: { orientationMargin: 0, textPaddingInline: '0 12px' },
       Descriptions: { labelBg: n.fillAlter },
-      Segmented: { itemSelectedBg: n.container },
+      // 暗色下弹窗底色（elevated）比容器色亮，选中项若用容器色会像陷进去的洞；改成比弹窗更亮的一档
+      Segmented: dark
+        ? { itemSelectedBg: '#2b303b', trackBg: n.container, itemSelectedColor: '#ffffff' }
+        : { itemSelectedBg: n.container },
       Statistic: { contentFontSize: 26 },
       Alert: { withDescriptionPadding: '14px 16px' },
       Pagination: { itemActiveBg: n.container },
@@ -189,6 +226,15 @@ export function buildTheme(mode: ColorMode): ThemeConfig {
     },
   }
 }
+
+/** 关掉「两个汉字按钮自动插空格」：「保 存」「取 消」和四字按钮放在一起不统一 */
+const BUTTON_CONFIG = { autoInsertSpace: false } as const
+
+/**
+ * 全局提示下移到顶栏（60px）之下：默认 top 8px 会压住顶栏按钮和抽屉右上角的关闭按钮。
+ * App.tsx 里的 <AntdApp> 也要传同一个配置（接口错误提示走的是 useApp 的实例）。
+ */
+export const MESSAGE_CONFIG = { top: 72 } as const
 
 function initialMode(): ColorMode {
   try {
@@ -240,18 +286,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.colorScheme = mode
     ConfigProvider.config({
       holderRender: (node) => (
-        <ConfigProvider locale={zhCN} theme={themeConfig}>
-          <AntdApp>{node}</AntdApp>
+        <ConfigProvider locale={zhCN} theme={themeConfig} button={BUTTON_CONFIG}>
+          <AntdApp message={MESSAGE_CONFIG}>{node}</AntdApp>
         </ConfigProvider>
       ),
     })
+    // 页面里直接 import { message } from 'antd' 的静态调用也用同一个位置
+    message.config(MESSAGE_CONFIG)
   }, [mode, themeConfig])
 
   const value = useMemo(() => ({ mode, toggle }), [mode, toggle])
 
   return (
     <ColorModeContext.Provider value={value}>
-      <ConfigProvider locale={zhCN} theme={themeConfig}>
+      <ConfigProvider locale={zhCN} theme={themeConfig} button={BUTTON_CONFIG}>
         {children}
       </ConfigProvider>
     </ColorModeContext.Provider>

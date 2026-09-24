@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
-import ProTable, { type ActionType } from '@ant-design/pro-table'
+import ProTable, { type ActionType, type ColumnsState } from '@ant-design/pro-table'
 import { Badge, Button, Grid, Modal, Tag, Tooltip, Typography, message } from 'antd'
 import {
   ArrowRightOutlined,
@@ -124,6 +124,13 @@ function ValidityCell({ start, end }: { start: number; end: number }) {
   )
 }
 
+type ColumnsStateMap = Record<string, ColumnsState>
+
+/** 断点决定「操作」列固不固定（键是下面列定义里的 key 'actions'），只改这一列的 fixed */
+function withPinnedActions(map: ColumnsStateMap, pinned: boolean): ColumnsStateMap {
+  return { ...map, actions: { ...map.actions, fixed: pinned ? 'right' : undefined } }
+}
+
 export default function GiftcardList() {
   const tableRef = useRef<ActionType>(null)
   const [createOpen, setCreateOpen] = useState(false)
@@ -137,6 +144,17 @@ export default function GiftcardList() {
   // useBreakpoint 首次渲染返回 {}，先用 matchMedia 同步判断，免得手机上先固定再松开闪一下
   const screens = Grid.useBreakpoint()
   const pinActions = screens.md ?? window.matchMedia('(min-width: 768px)').matches
+  // ProTable 只在挂载时从列定义读一次 fixed、之后以列设置状态为准，所以把列设置状态受控：
+  // 断点变了只改操作列的 fixed（跨断点缩放窗口时也能跟着变），用户在列设置里调过的显隐、顺序原样保留
+  const [columnsState, setColumnsState] = useState<ColumnsStateMap>(() =>
+    withPinnedActions({}, pinActions),
+  )
+  const [pinnedFor, setPinnedFor] = useState(pinActions)
+  if (pinnedFor !== pinActions) {
+    // 渲染期间按新断点调整状态（React 推荐的写法，比 useEffect 少一次用旧值渲染）
+    setPinnedFor(pinActions)
+    setColumnsState((s) => withPinnedActions(s, pinActions))
+  }
 
   const reload = () => tableRef.current?.reload()
 
@@ -261,6 +279,12 @@ export default function GiftcardList() {
           pageSizeOptions: [10, 20, 50, 100],
           showSizeChanger: true,
           showTotal: (t) => `共 ${t} 张卡`,
+        }}
+        columnsState={{
+          value: columnsState,
+          onChange: setColumnsState,
+          // 列设置里的「重置」回到当前断点的默认值
+          defaultValue: withPinnedActions({}, pinActions),
         }}
         search={false}
         options={{ density: false, fullScreen: true, setting: true, reload: false }}

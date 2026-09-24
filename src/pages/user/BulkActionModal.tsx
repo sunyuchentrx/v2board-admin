@@ -11,6 +11,7 @@ import {
   Typography,
   message,
 } from 'antd'
+import { ExclamationCircleOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { ApiError } from '@/api/client'
 import {
@@ -313,6 +314,9 @@ function BulkActionDialog({
       width={640}
       destroyOnHidden
       maskClosable={false}
+      // body 限高 100vh - 240 后弹窗最高约 100vh - 88（头 + 尾约 152px），top 44 让长弹窗上下留白一致；
+      // 默认 top 100 时底部只剩约 12px，遮罩还会多出一截滚动。不用 centered：切换内容时弹窗会上下跳
+      style={{ top: 44 }}
       styles={{ body: { maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' } }}
     >
       <div className="user-page-stack">
@@ -336,17 +340,14 @@ function BulkActionDialog({
                 <p>{meta.repeatGuard.hint}</p>
                 <div className="user-page-conds">
                   <span className="user-page-conds-label">上次</span>
-                  {previous.detail.subject && (
-                    <Tag bordered={false}>主题：{previous.detail.subject}</Tag>
-                  )}
-                  <Tag bordered={false}>{previous.detail.count} 个用户</Tag>
+                  {/* 提示框本身有底色，里面的标签带边框才认得出；危险靠图标和文字表达，不靠同色 */}
+                  {previous.detail.subject && <Tag>主题：{previous.detail.subject}</Tag>}
+                  <Tag>{previous.detail.count} 个用户</Tag>
                   {Array.isArray(previous.detail.filters) &&
                   previous.detail.filters.length > 0 ? (
                     previous.detail.filters.map((f, i) => <CondTag key={i} filter={f} />)
                   ) : (
-                    <Tag bordered={false} color="error">
-                      无筛选条件（全部用户）
-                    </Tag>
+                    <Tag icon={<ExclamationCircleOutlined />}>无筛选条件（全部用户）</Tag>
                   )}
                 </div>
                 <Checkbox
@@ -389,8 +390,11 @@ function BulkActionDialog({
                       <CondTag key={i} filter={f} />
                     ))}
                     {excluding && (
-                      <Tag bordered={false} color="success">
-                        is_admin = 0（排除管理员）
+                      <Tag color="success" className="user-page-cond">
+                        <span className="mono">is_admin</span>
+                        <span className="user-page-cond-op">=</span>
+                        <strong>0</strong>
+                        <span>（排除管理员）</span>
                       </Tag>
                     )}
                   </div>
@@ -525,7 +529,7 @@ function BulkActionDialog({
 /** 一条过滤条件：字段名（等宽） 比较符 值 */
 function CondTag({ filter }: { filter: UserFilter }) {
   return (
-    <Tag bordered={false} color="processing" className="user-page-cond">
+    <Tag color="processing" className="user-page-cond">
       <span className="mono">{filter.key}</span>
       <span className="user-page-cond-op">{filter.condition}</span>
       <strong>{String(filter.value)}</strong>

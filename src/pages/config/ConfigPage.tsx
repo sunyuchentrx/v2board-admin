@@ -18,11 +18,13 @@ import {
   Spin,
   Tabs,
   Tag,
+  Tooltip,
   Typography,
   message,
   type ColProps,
 } from 'antd'
 import {
+  ApiOutlined,
   CloseCircleFilled,
   CloudServerOutlined,
   CustomerServiceOutlined,
@@ -91,11 +93,13 @@ function colProps(span = 24): ColProps {
   return { xs: 24, sm: span }
 }
 
-/** 同一排开关卡片的列宽：单个占满整行，双数两列，单数在宽屏三列 */
-function switchColProps(count: number): ColProps {
-  if (count === 1) return { span: 24 }
-  if (count % 2 === 0) return { xs: 24, md: 12 }
-  return { xs: 24, md: 12, xl: 8 }
+/**
+ * 同一排开关卡片的列数不按视口断点，而按分组卡片自己的宽度（ConfigPage.css 里的容器查询）：
+ * 有侧边栏又有分组导航时（例如 1024 宽），内容列只剩 500 多 px，按视口算的两列会把说明挤成三四行。
+ * 这里只标出这一排有几个开关，列数交给 CSS。
+ */
+function switchRunClass(count: number) {
+  return `config-page-switches ${count === 1 ? 'is-1' : count === 3 ? 'is-3' : 'is-2'}`
 }
 
 interface Section {
@@ -222,6 +226,10 @@ export default function ConfigPage() {
   const [dirty, setDirty] = useState<ReadonlySet<string>>(() => new Set())
   const screens = Grid.useBreakpoint()
   const compact = screens.lg === false
+  /** 手机宽度：「重新读取」只留图标，保存栏保持一行 */
+  const narrow = screens.sm === false
+  const [testingMail, setTestingMail] = useState(false)
+  const [settingWebhook, setSettingWebhook] = useState(false)
 
   const [configQuery, emailTplQuery, themeTplQuery] = useQueries({
     queries: [
@@ -438,10 +446,21 @@ export default function ConfigPage() {
     }
   }
 
-  /** 输入类字段。help：整行字段放在下方（extra），半行字段放进 label 旁的问号，同一行高度一致 */
+  /** 这个字段在当前断点下是否独占一行（与 colProps 的断点一致） */
+  function isFullRow(span = 24) {
+    if (span >= 24 || screens.sm === false) return true
+    return span === 12 && screens.md === false
+  }
+
+  /**
+   * 输入类字段。help：独占一行时放在下方（extra），和别的字段并排时放进 label 旁的问号，
+   * 同一行高度一致。窄屏上半宽字段也折成整行了，这时同样放在下方，触屏上不用去点小问号。
+   */
   function renderInput(field: ConfigField) {
     const helpAs = field.help
-      ? (field.helpAs ?? ((field.span ?? 24) >= 24 ? 'extra' : 'tooltip'))
+      ? isFullRow(field.span)
+        ? 'extra'
+        : (field.helpAs ?? 'tooltip')
       : undefined
     return (
       <Col {...colProps(field.span)} key={field.name}>
@@ -459,9 +478,9 @@ export default function ConfigPage() {
   }
 
   /** 开关字段：SettingSwitch 卡片（标题 + help 作说明），同一排等高 */
-  function renderSwitch(field: ConfigField, col: ColProps) {
+  function renderSwitch(field: ConfigField) {
     return (
-      <Col {...col} key={field.name}>
+      <div className="config-page-switch-cell" key={field.name}>
         <SettingSwitch
           name={field.name}
           title={<FieldLabel field={field} />}
@@ -469,24 +488,29 @@ export default function ConfigPage() {
           // 显式传 true 才有禁用样式；其余情况传 undefined，交给 Form 的 disabled（没回填时整表禁用）
           disabled={field.readonly || !populated ? true : undefined}
         />
-      </Col>
+      </div>
     )
   }
 
   function renderSection(section: Section, index: number) {
-    const rows = splitRuns(section.fields).map((run) => (
-      <Row gutter={16} key={run.fields[0]?.name}>
-        {run.switches
-          ? run.fields.map((f) => renderSwitch(f, switchColProps(run.fields.length)))
-          : run.fields.map(renderInput)}
-      </Row>
-    ))
+    const rows = splitRuns(section.fields).map((run) =>
+      run.switches ? (
+        <div className={switchRunClass(run.fields.length)} key={run.fields[0]?.name}>
+          {run.fields.map(renderSwitch)}
+        </div>
+      ) : (
+        <Row gutter={16} key={run.fields[0]?.name}>
+          {run.fields.map(renderInput)}
+        </Row>
+      ),
+    )
     if (!section.title) return <div key={index}>{rows}</div>
     return (
       <FormSection
         key={section.title}
         title={section.title}
         description={section.description}
+        extra={sectionAction(section)}
         first={index === 0}
       >
         {rows}
@@ -494,39 +518,61 @@ export default function ConfigPage() {
     )
   }
 
+  /** 小节标题右侧的动作：放在它要用到的字段旁边 */
+  function sectionAction(section: Section): ReactNode {
+    if (section.fields.some((f) => f.name === 'telegram_bot_token')) {
+      return (
+        <Tooltip title="用下方填写的 Bot Token（不必先保存）向 Telegram 注册 Webhook">
+          <Button
+            size="small"
+            icon={<ApiOutlined />}
+            loading={settingWebhook}
+            onClick={async () => {
+              const token = form.getFieldValue('telegram_bot_token')
+              if (!token) {
+                message.warning('请先填写 Bot Token')
+                return
+              }
+              setSettingWebhook(true)
+              try {
+                await setTelegramWebhook(token)
+                message.success('Webhook 已设置')
+              } finally {
+                setSettingWebhook(false)
+              }
+            }}
+          >
+            设置 Webhook
+          </Button>
+        </Tooltip>
+      )
+    }
+    return null
+  }
+
   /** 分组卡片右上角的动作 */
   function groupAction(key: string): ReactNode {
     if (key === 'email') {
       return (
-        <Button
-          icon={<SendOutlined />}
-          onClick={async () => {
-            await testSendMail()
-            message.success(
-              '测试邮件已发送到当前管理员邮箱，请查收（失败原因会在响应的 log 字段里）',
-            )
-          }}
-        >
-          发送测试邮件
-        </Button>
-      )
-    }
-    if (key === 'telegram') {
-      return (
-        <Button
-          icon={<SendOutlined />}
-          onClick={async () => {
-            const token = form.getFieldValue('telegram_bot_token')
-            if (!token) {
-              message.warning('请先填写 Bot Token')
-              return
-            }
-            await setTelegramWebhook(token)
-            message.success('Webhook 已设置')
-          }}
-        >
-          设置 Webhook
-        </Button>
+        <Tooltip title="使用已保存并生效的 SMTP 配置发送；刚改的配置要先保存生效">
+          <Button
+            icon={<SendOutlined />}
+            loading={testingMail}
+            onClick={async () => {
+              setTestingMail(true)
+              try {
+                await testSendMail()
+                message.success(
+                  '测试邮件已发送到当前管理员邮箱，请查收（失败原因会在响应的 log 字段里）',
+                )
+              } finally {
+                setTestingMail(false)
+              }
+            }}
+          >
+            发送测试邮件
+          </Button>
+        </Tooltip>
       )
     }
     return null
@@ -737,14 +783,17 @@ export default function ConfigPage() {
           subTitle="这是后端在 Workerman 模式下的已知问题：写文件成功，但重建配置缓存那一步抛异常，所以进程仍在用旧配置。"
           extra={
             <div className="config-page-outcome-body">
-              <Typography.Text>在服务器上执行这两条命令即可让配置生效：</Typography.Text>
+              <Typography.Text>
+                在服务器上先进入面板所在目录，再执行这两条命令即可让配置生效：
+              </Typography.Text>
+              {/* 复制出来的就是看到的这两条（用 && 连成一行），不再带占位的 cd 路径 */}
               <CommandBlock
                 lines={[
                   'php artisan config:cache',
                   'php -c cli-php.ini webman.php stop && php -c cli-php.ini webman.php start -d',
                 ]}
                 copyText={
-                  'cd /path/to/v2board && php artisan config:cache && ' +
+                  'php artisan config:cache && ' +
                   'php -c cli-php.ini webman.php stop && ' +
                   'php -c cli-php.ini webman.php start -d'
                 }
@@ -776,6 +825,13 @@ export default function ConfigPage() {
     )
   } else if (!populated) {
     status = <span className="config-page-savebar-state">正在读取线上配置…</span>
+  } else if (errorGroups.size > 0) {
+    status = (
+      <span className="config-page-savebar-state is-error">
+        <CloseCircleFilled />
+        <span className="tabular-nums">{errorGroups.size}</span> 个分组有字段未通过校验
+      </span>
+    )
   } else if (dirty.size > 0) {
     status = (
       <span className="config-page-savebar-state is-dirty">
@@ -786,6 +842,33 @@ export default function ConfigPage() {
   } else {
     status = <span className="config-page-savebar-state">没有未保存的修改</span>
   }
+
+  const saveBar = (
+    <div className="config-page-savebar">
+      <div className="config-page-savebar-status">
+        {status}
+        <span className="config-page-savebar-hint">
+          保存后需在服务器上补执行 config:cache 才生效
+        </span>
+      </div>
+      <Space size={8} className="config-page-savebar-actions">
+        <Tooltip title={narrow ? '重新读取' : undefined}>
+          <Button icon={<ReloadOutlined />} onClick={reload} aria-label="重新读取">
+            {narrow ? null : '重新读取'}
+          </Button>
+        </Tooltip>
+        <Button
+          type="primary"
+          icon={<SaveOutlined />}
+          loading={saving}
+          disabled={!canSave}
+          onClick={confirmSave}
+        >
+          保存
+        </Button>
+      </Space>
+    </div>
+  )
 
   return (
     <Spin
@@ -843,7 +926,14 @@ export default function ConfigPage() {
           // 后端 422 用 setFields 挂上的错误，对没有前端 rules 的字段不会自动消失；
           // 字段一改就清掉，免得改对了还挂着旧红字
           onValuesChange={(changed) => {
-            form.setFields(Object.keys(changed).map((name) => ({ name, errors: [] })))
+            // 只清真的挂着错误的字段：对没有错误的字段也 setFields(errors: [])，rc-field-form 比较 meta 时
+            // errors 和 warnings 是同一个空数组，开发环境会误报「There may be circular references」
+            const withErrors = Object.keys(changed).filter(
+              (name) => form.getFieldError(name).length > 0,
+            )
+            if (withErrors.length > 0) {
+              form.setFields(withErrors.map((name) => ({ name, errors: [] })))
+            }
             trackDirty(changed)
             refreshErrorGroups()
           }}
@@ -852,6 +942,7 @@ export default function ConfigPage() {
         >
           <Tabs
             className="config-page-tabs"
+            popupClassName="config-page-tabs-popup"
             tabPosition={compact ? 'top' : 'left'}
             activeKey={activeTab}
             onChange={setActiveTab}
@@ -876,52 +967,42 @@ export default function ConfigPage() {
               // validateFields 校验不到、setFields 的 422 错误也挂不上去
               forceRender: true,
               children: (
-                <Card
-                  className="config-page-group"
-                  title={
-                    <div className="config-page-group-head">
-                      <span className="config-page-group-icon">
-                        {GROUP_ICONS[group.key] ?? <SettingOutlined />}
-                      </span>
-                      <div className="config-page-group-titles">
-                        <div className="config-page-group-title">{group.title}</div>
-                        {group.description && (
-                          <div className="config-page-group-desc">{group.description}</div>
-                        )}
+                <>
+                  <Card
+                    className="config-page-group"
+                    title={
+                      <div className="config-page-group-head">
+                        <span className="config-page-group-icon">
+                          {GROUP_ICONS[group.key] ?? <SettingOutlined />}
+                        </span>
+                        <div className="config-page-group-titles">
+                          <div className="config-page-group-title">{group.title}</div>
+                          {group.description && group.descriptionTone !== 'warning' && (
+                            <div className="config-page-group-desc">{group.description}</div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  }
-                  extra={groupAction(group.key)}
-                >
-                  {(GROUP_SECTIONS.get(group.key) ?? []).map(renderSection)}
-                </Card>
+                    }
+                    extra={groupAction(group.key)}
+                  >
+                    {group.description && group.descriptionTone === 'warning' && (
+                      <Alert
+                        className="config-page-group-alert"
+                        type="warning"
+                        showIcon
+                        message={group.description}
+                      />
+                    )}
+                    {(GROUP_SECTIONS.get(group.key) ?? []).map(renderSection)}
+                  </Card>
+                  {/* 保存栏只挂在当前分组下面：紧跟卡片，字段少的分组也不会隔着导航的高度 */}
+                  {group.key === activeTab && saveBar}
+                </>
               ),
             }))}
           />
         </Form>
 
-        <div className={`config-page-savebar${compact ? '' : ' is-offset'}`}>
-          <div className="config-page-savebar-status">
-            {status}
-            <span className="config-page-savebar-hint">
-              保存后需在服务器上补执行 config:cache 才生效
-            </span>
-          </div>
-          <Space size={8} className="config-page-savebar-actions">
-            <Button icon={<ReloadOutlined />} onClick={reload}>
-              重新读取
-            </Button>
-            <Button
-              type="primary"
-              icon={<SaveOutlined />}
-              loading={saving}
-              disabled={!canSave}
-              onClick={confirmSave}
-            >
-              保存
-            </Button>
-          </Space>
-        </div>
       </Flex>
     </Spin>
   )

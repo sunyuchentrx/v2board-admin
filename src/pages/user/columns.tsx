@@ -19,10 +19,10 @@ import './UserList.css'
  * search: false 是默认策略：后端的过滤是 filter[n][key|condition|value] 的自定义
  * 格式，且键有白名单，无法用 ProTable 的自动搜索表单直接对上，所以搜索区单独实现。
  *
- * 宽度预算：1440 宽屏下表格可用宽度约 1100px，默认显示的列加上操作列要能一屏放下，
- * 否则固定在右侧的操作列会盖住紧挨着它的那一列（原来盖住的是余额 / 佣金）。
- * 所以套餐和到期时间合成一列、备注放到邮箱下面一行；最后登录 / 注册时间默认隐藏，
- * 需要时从表格右上角的列设置里打开（打开后表格会自动出现横向滚动）。
+ * 宽度预算：默认显示的列加上操作列要能一屏放下，否则固定在右侧的操作列会盖住紧挨着它的那一列
+ * （原来盖住的是余额 / 佣金）。按 1280 宽的笔记本算（侧栏展开时表格可用宽度约 950px）：
+ * 套餐和到期时间合成一列、余额和佣金合成一列、备注和角色标签放到邮箱下面一行；
+ * 最后登录 / 注册时间默认隐藏，需要时从表格右上角的列设置里打开（打开后表格会自动出现横向滚动）。
  */
 
 /** 默认隐藏的列（key），见上面的宽度预算 */
@@ -83,9 +83,11 @@ export function buildUserColumns({
       dataIndex: 'email',
       width: 208,
       fixed: pin ? 'left' : undefined,
-      render: (_, row) => (
-        <div className="user-page-cell">
-          <div className="user-page-line">
+      render: (_, row) => {
+        const isAdmin = row.is_admin === 1
+        const isStaff = row.is_staff === 1
+        return (
+          <div className="user-page-cell">
             <Typography.Text
               className="user-page-email"
               copyable={{ text: row.email, tooltips: ['复制邮箱', '已复制'] }}
@@ -93,27 +95,32 @@ export function buildUserColumns({
             >
               {row.email}
             </Typography.Text>
-            {row.is_admin === 1 && (
-              <Tag bordered={false} color="processing" className="user-page-tag">
-                管理员
-              </Tag>
-            )}
-            {row.is_staff === 1 && (
-              <Tag bordered={false} className="user-page-tag">
-                员工
-              </Tag>
+            {/* 角色标签和备注放第二行：放在邮箱后面会把最该看清的邮箱挤成省略号 */}
+            {(isAdmin || isStaff || row.remarks) && (
+              <div className="user-page-line">
+                {isAdmin && (
+                  <Tag bordered={false} color="processing" className="user-page-tag">
+                    管理员
+                  </Tag>
+                )}
+                {isStaff && (
+                  <Tag bordered={false} color="purple" className="user-page-tag">
+                    员工
+                  </Tag>
+                )}
+                {row.remarks && (
+                  <Typography.Text
+                    className="user-page-sub user-page-remark"
+                    ellipsis={{ tooltip: row.remarks }}
+                  >
+                    {row.remarks}
+                  </Typography.Text>
+                )}
+              </div>
             )}
           </div>
-          {row.remarks && (
-            <Typography.Text
-              className="user-page-sub user-page-remark"
-              ellipsis={{ tooltip: row.remarks }}
-            >
-              {row.remarks}
-            </Typography.Text>
-          )}
-        </div>
-      ),
+        )
+      },
     },
     {
       title: '状态',
@@ -174,7 +181,9 @@ export function buildUserColumns({
         }
         const ratio = row.total_used / row.transfer_enable
         const percent = Math.min(100, Math.round(ratio * 100))
-        const level = ratio >= 1 ? 'is-danger' : ratio >= 0.8 ? 'is-warning' : ''
+        // 超额（红）按四舍五入后的 percent 判断，和进度条 / tooltip 里显示的「已用 100%」一致
+        const exceeded = percent >= 100
+        const level = exceeded ? 'is-danger' : ratio >= 0.8 ? 'is-warning' : ''
         return (
           <Tooltip
             title={
@@ -197,8 +206,8 @@ export function buildUserColumns({
                 percent={percent}
                 size="small"
                 showInfo={false}
-                status={ratio >= 1 ? 'exception' : 'normal'}
-                strokeColor={ratio >= 0.8 && ratio < 1 ? 'var(--va-color-warning)' : undefined}
+                status={exceeded ? 'exception' : 'normal'}
+                strokeColor={ratio >= 0.8 && !exceeded ? 'var(--va-color-warning)' : undefined}
               />
             </div>
           </Tooltip>
@@ -230,25 +239,19 @@ export function buildUserColumns({
       },
     },
     {
-      title: '余额',
+      // 余额 + 佣金合成一列（见文件头的宽度预算），两行右对齐
+      title: '余额 / 佣金',
       key: 'balance',
       dataIndex: 'balance',
-      width: 96,
+      width: 108,
       align: 'right',
       render: (_, row) => (
-        <span className={row.balance ? undefined : 'muted'}>{formatMoney(row.balance)}</span>
-      ),
-    },
-    {
-      title: '佣金',
-      key: 'commission_balance',
-      dataIndex: 'commission_balance',
-      width: 96,
-      align: 'right',
-      render: (_, row) => (
-        <span className={row.commission_balance ? undefined : 'muted'}>
-          {formatMoney(row.commission_balance)}
-        </span>
+        <div className="user-page-cell user-page-money">
+          <span className={row.balance ? undefined : 'muted'}>{formatMoney(row.balance)}</span>
+          <span className={`user-page-sub${row.commission_balance ? ' is-active' : ''}`}>
+            佣金 {formatMoney(row.commission_balance)}
+          </span>
+        </div>
       ),
     },
     {
